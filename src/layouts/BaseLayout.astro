@@ -1,0 +1,47 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import Navbar from '../components/Navbar.astro';
+
+interface Props {
+	title: string;
+	description: string;
+}
+
+const { title, description } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en" data-theme="dark">
+	<head>
+		<BaseHead title={title} description={description} />
+		<script is:inline>
+			const storedTheme = localStorage.getItem('theme');
+			const preferredTheme = window.matchMedia('(prefers-color-scheme: light)').matches
+				? 'light'
+				: 'dark';
+			document.documentElement.dataset.theme = storedTheme || preferredTheme;
+		</script>
+	</head>
+	<body>
+		<Navbar />
+		<slot />
+		<Footer />
+		<script is:inline>
+			const toggle = document.querySelector('[data-theme-toggle]');
+			const syncLabel = () => {
+				if (!toggle) return;
+				const theme = document.documentElement.dataset.theme || 'dark';
+				toggle.setAttribute('aria-label', `Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`);
+				toggle.setAttribute('title', `Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`);
+			};
+			syncLabel();
+			toggle?.addEventListener('click', () => {
+				const nextTheme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+				document.documentElement.dataset.theme = nextTheme;
+				localStorage.setItem('theme', nextTheme);
+				syncLabel();
+			});
+		</script>
+	</body>
+</html>

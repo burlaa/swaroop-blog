@@ -1,0 +1,19 @@
+---
+import { SITE_AUTHOR } from '../consts';
+---
+
+<header class="site-header">
+	<nav class="site-nav" aria-label="Primary navigation">
+		<a class="brand" href="/" aria-label={`${SITE_AUTHOR} home`}>
+			<span class="brand-mark" aria-hidden="true"></span>
+			<span>{SITE_AUTHOR}</span>
+		</a>
+		<div class="nav-actions">
+			<a href="/blog/">Journal</a>
+			<a href="/rss.xml">RSS</a>
+			<button class="theme-toggle" type="button" data-theme-toggle aria-label="Switch color theme">
+				<span class="theme-toggle__icon" aria-hidden="true"></span>
+			</button>
+		</div>
+	</nav>
+</header>

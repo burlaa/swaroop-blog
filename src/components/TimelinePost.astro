@@ -1,0 +1,27 @@
+---
+import type { CollectionEntry } from 'astro:content';
+
+interface Props {
+	post: CollectionEntry<'blog'>;
+	index: number;
+}
+
+const { post, index } = Astro.props;
+const date = post.data.pubDate;
+const year = date.toLocaleDateString('en', { year: 'numeric' });
+const day = date.toLocaleDateString('en', { month: 'short', day: 'numeric' });
+---
+
+<article class="timeline-post fade-in" style={`--delay: ${index * 80}ms`}>
+	<div class="timeline-post__date" aria-label={date.toDateString()}>
+		<span>{year}</span>
+		<time datetime={date.toISOString()}>{day}</time>
+	</div>
+	<div class="timeline-post__rail" aria-hidden="true">
+		<span></span>
+	</div>
+	<a class="timeline-post__content" href={`/blog/${post.id}/`}>
+		<h2>{post.data.title}</h2>
+		<p>{post.data.description}</p>
+	</a>
+</article>
