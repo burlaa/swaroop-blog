@@ -186,12 +186,12 @@ svg {
 .home-shell {
 	width: min(100% - 2rem, 880px);
 	margin: 0 auto;
-	padding: 7.5rem 0 5rem;
+	padding: 5.25rem 0 5rem;
 }
 
 .intro {
-	max-width: 680px;
-	margin-bottom: 5rem;
+	max-width: 760px;
+	margin-bottom: 3.75rem;
 }
 
 .intro--compact {
@@ -199,7 +199,7 @@ svg {
 }
 
 .eyebrow {
-	margin: 0 0 1.1rem;
+	margin: 0 0 0.9rem;
 	color: var(--muted-soft);
 	font-size: 0.78rem;
 	font-weight: 650;
@@ -208,20 +208,22 @@ svg {
 }
 
 .intro h1 {
-	max-width: 720px;
+	max-width: 760px;
 	margin: 0;
 	color: var(--text-strong);
-	font-size: clamp(2.5rem, 7vw, 5.4rem);
+	font-size: clamp(2.15rem, 5vw, 3.65rem);
 	font-weight: 650;
-	line-height: 0.98;
+	line-height: 1.03;
+	white-space: nowrap;
 }
 
 .intro p:not(.eyebrow) {
-	max-width: 620px;
-	margin: 1.6rem 0 0;
+	max-width: 760px;
+	margin: 1.1rem 0 0;
 	color: var(--muted);
-	font-size: clamp(1rem, 2vw, 1.16rem);
-	line-height: 1.8;
+	font-size: clamp(0.98rem, 1.5vw, 1.08rem);
+	line-height: 1.72;
+	white-space: nowrap;
 }
 
 .timeline {
@@ -406,6 +408,53 @@ svg {
 	margin-top: 0.45rem;
 }
 
+.prose .insight-list {
+	display: grid;
+	gap: 1rem;
+	margin: 1.75rem 0 0;
+	padding: 0;
+	list-style: none;
+}
+
+.prose .insight-list li {
+	position: relative;
+	padding: 0 0 1.05rem 1.85rem;
+	border-bottom: 1px solid var(--border);
+	color: var(--muted);
+}
+
+.prose .insight-list li::before {
+	position: absolute;
+	top: 0.48rem;
+	left: 0;
+	width: 0.55rem;
+	height: 0.55rem;
+	border: 1px solid var(--text-strong);
+	border-radius: 999px;
+	background: var(--bg);
+	box-shadow: 0 0 0 4px color-mix(in srgb, var(--text-strong) 8%, transparent);
+	content: "";
+}
+
+.prose .insight-list strong,
+.prose .insight-list span {
+	display: block;
+}
+
+.prose .insight-list strong {
+	color: var(--text-strong);
+	font-size: 1.02rem;
+	font-weight: 640;
+	line-height: 1.35;
+}
+
+.prose .insight-list span {
+	margin-top: 0.38rem;
+	color: color-mix(in srgb, var(--text) 78%, var(--muted));
+	font-size: 0.98rem;
+	line-height: 1.72;
+}
+
 .prose blockquote {
 	margin: 2rem 0;
 	padding: 0.3rem 0 0.3rem 1.25rem;
@@ -529,7 +578,7 @@ svg {
 	.home-shell,
 	.article-shell {
 		width: min(100% - 1.25rem, 720px);
-		padding-top: 4.5rem;
+		padding-top: 3.75rem;
 	}
 
 	.article-shell {
@@ -538,7 +587,12 @@ svg {
 	}
 
 	.intro {
-		margin-bottom: 3.25rem;
+		margin-bottom: 2.75rem;
+	}
+
+	.intro h1,
+	.intro p:not(.eyebrow) {
+		white-space: normal;
 	}
 
 	.timeline-post {
