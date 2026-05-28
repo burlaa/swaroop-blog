@@ -21,23 +21,6 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 			<div class="canvas-wrap">
 				<canvas id="game-canvas" aria-label="2048 game board"></canvas>
 			</div>
-
-			<div class="mobile-arrows" data-arrows>
-				<button type="button" class="arrow-btn arrow-up" data-move="up" aria-label="Up">
-					<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M5 13L10 7L15 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-				</button>
-				<div class="arrow-row">
-					<button type="button" class="arrow-btn arrow-left" data-move="left" aria-label="Left">
-						<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M13 5L7 10L13 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-					</button>
-					<button type="button" class="arrow-btn arrow-down" data-move="down" aria-label="Down">
-						<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M5 7L10 13L15 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-					</button>
-					<button type="button" class="arrow-btn arrow-right" data-move="right" aria-label="Right">
-						<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M7 5L13 10L7 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-					</button>
-				</div>
-			</div>
 		</section>
 	</main>
 </BaseLayout>
@@ -158,44 +141,6 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 		cursor: pointer;
 	}
 
-	.mobile-arrows {
-		display: none;
-		flex-direction: column;
-		align-items: center;
-		gap: 0.3rem;
-		padding: 0.3rem 0.6rem 0.8rem;
-	}
-
-	.arrow-row {
-		display: flex;
-		gap: 0.3rem;
-	}
-
-	.arrow-btn {
-		width: 52px;
-		height: 52px;
-		display: grid;
-		place-items: center;
-		border: 1px solid var(--border);
-		border-radius: 0.5rem;
-		background: color-mix(in srgb, var(--surface) 88%, transparent);
-		color: var(--muted);
-		cursor: pointer;
-		transition: background-color 120ms ease, color 120ms ease;
-		-webkit-tap-highlight-color: transparent;
-	}
-
-	.arrow-btn:active {
-		background: color-mix(in srgb, var(--text-strong) 12%, var(--surface));
-		color: var(--text-strong);
-	}
-
-	@media (hover: none) and (pointer: coarse) {
-		.mobile-arrows {
-			display: flex;
-		}
-	}
-
 	@media (max-width: 520px) {
 		.game-shell {
 			width: min(100% - 1rem, 680px);
@@ -214,7 +159,6 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 	const ctx = canvas.getContext('2d')!;
 	const scoreEl = document.querySelector<HTMLElement>('[data-score]');
 	const resetButton = document.querySelector<HTMLButtonElement>('[data-reset]');
-	const arrowsEl = document.querySelector<HTMLElement>('[data-arrows]');
 
 	const SIZE = 4;
 	const DPR = window.devicePixelRatio || 1;
@@ -767,15 +711,6 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 			touchStart = null;
 		}
 	}, { passive: false });
-
-	// Arrow buttons
-	arrowsEl?.querySelectorAll<HTMLButtonElement>('[data-move]').forEach((btn) => {
-		btn.addEventListener('click', () => {
-			if (gameOver) { resetGame(); return; }
-			if (won && !keepPlaying) { keepPlaying = true; draw(1); }
-			move(btn.dataset.move as 'up' | 'down' | 'left' | 'right');
-		});
-	});
 
 	canvas.addEventListener('click', () => {
 		if (gameOver) resetGame();

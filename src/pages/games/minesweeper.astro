@@ -499,7 +499,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 		let clientX: number, clientY: number;
 
 		if (e instanceof TouchEvent) {
-			const t = e.touches[0];
+			const t = e.touches[0] || e.changedTouches[0];
 			clientX = t.clientX;
 			clientY = t.clientY;
 		} else {
