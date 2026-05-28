@@ -620,6 +620,13 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
 	function onTouch(e: TouchEvent) {
 		e.preventDefault();
+
+		// Start game on touch if not running
+		if (waitingToStart || gameOverText) {
+			startGame();
+			return;
+		}
+
 		for (let i = 0; i < e.changedTouches.length; i++) {
 			const t = e.changedTouches[i];
 			const rect = canvas.getBoundingClientRect();
