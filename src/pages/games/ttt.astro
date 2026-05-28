@@ -4,58 +4,32 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
 <BaseLayout
 	title="Tic Tac Toe"
-	description="A minimal Tic Tac Toe game with computer and two-player modes."
+	description="A minimal Tic Tac Toe game."
 >
 	<main class="game-shell">
-		<section class="game-hero fade-in">
-			<p class="eyebrow">Small game</p>
-			<h1>Tic Tac Toe</h1>
-			<p>A quiet little board for quick rounds, clean wins, and beautiful draws.</p>
-		</section>
-
-		<section class="ttt-panel fade-in" aria-label="Tic Tac Toe game">
-			<div class="ttt-topbar">
+		<section class="game-panel fade-in" aria-label="Tic Tac Toe game">
+			<div class="game-topbar">
 				<div class="mode-switch" role="group" aria-label="Game mode">
 					<button type="button" class="is-active" data-mode="computer">Computer</button>
 					<button type="button" data-mode="players">2 Players</button>
 				</div>
-				<button type="button" class="ghost-button" data-reset>Reset</button>
-			</div>
-
-			<div class="score-grid" aria-label="Score">
-				<div>
-					<span data-score-label-x>You</span>
-					<strong data-score-x>0</strong>
-				</div>
-				<div>
-					<span>Draws</span>
-					<strong data-score-draws>0</strong>
-				</div>
-				<div>
-					<span data-score-label-o>Computer</span>
-					<strong data-score-o>0</strong>
+				<div class="topbar-right">
+					<div class="score-inline" data-score-inline>
+						<span data-score-label-x class="score-p">You</span>
+						<strong data-score-x>0</strong>
+						<span class="score-sep">/</span>
+						<span class="score-draw-label">Draw</span>
+						<strong data-score-draws>0</strong>
+						<span class="score-sep">/</span>
+						<span data-score-label-o class="score-p">CPU</span>
+						<strong data-score-o>0</strong>
+					</div>
+					<button type="button" class="ghost-button" data-reset>Reset</button>
 				</div>
 			</div>
 
-			<p class="game-status" data-status aria-live="polite">Your turn.</p>
-
-			<div class="board-wrap">
-				<div class="ttt-board" role="grid" aria-label="Tic Tac Toe board">
-					{
-						Array.from({ length: 9 }).map((_, index) => (
-							<button
-								type="button"
-								class="ttt-cell"
-								data-cell={index}
-								aria-label={`Cell ${index + 1}`}
-							/>
-						))
-					}
-				</div>
-			</div>
-
-			<div class="round-actions">
-				<button type="button" class="primary-button" data-next>Next round</button>
+			<div class="canvas-wrap">
+				<canvas id="ttt-canvas" aria-label="Tic Tac Toe board"></canvas>
 			</div>
 		</section>
 	</main>
@@ -65,34 +39,16 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 	.game-shell {
 		width: min(100% - 2rem, 680px);
 		margin: 0 auto;
-		padding: 2.1rem 0 3rem;
+		padding: 4rem 0 3rem;
+		display: flex;
+		justify-content: center;
 	}
 
-	.game-hero {
-		max-width: 520px;
-		margin-bottom: 0.95rem;
-	}
-
-	.game-hero h1 {
-		margin: 0;
-		color: var(--text-strong);
-		font-size: clamp(2rem, 5.6vw, 3.05rem);
-		font-weight: 650;
-		line-height: 1;
-	}
-
-	.game-hero p:not(.eyebrow) {
-		max-width: 460px;
-		margin: 0.5rem 0 0;
-		color: var(--muted);
-		font-size: 0.88rem;
-		line-height: 1.5;
-	}
-
-	.ttt-panel {
+	.game-panel {
 		position: relative;
 		overflow: hidden;
-		max-width: 520px;
+		width: 100%;
+		max-width: 400px;
 		border: 1px solid var(--border);
 		border-radius: 0.8rem;
 		background:
@@ -103,7 +59,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 			0 18px 60px rgba(0, 0, 0, 0.26);
 	}
 
-	.ttt-panel::before {
+	.game-panel::before {
 		position: absolute;
 		inset: -6rem -5rem auto;
 		height: 14rem;
@@ -117,52 +73,47 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 		content: "";
 	}
 
-	.ttt-topbar,
-	.score-grid,
-	.game-status,
-	.board-wrap,
-	.round-actions {
+	.game-topbar,
+	.canvas-wrap {
 		position: relative;
 		z-index: 1;
 	}
 
-	.ttt-topbar {
+	.game-topbar {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: 0.75rem;
-		padding: 0.7rem;
+		gap: 0.5rem;
+		padding: 0.5rem 0.6rem;
 		border-bottom: 1px solid var(--border);
 	}
 
 	.mode-switch {
 		display: inline-flex;
-		padding: 0.18rem;
+		padding: 0.15rem;
 		border: 1px solid var(--border);
 		border-radius: 999px;
 		background: color-mix(in srgb, var(--bg) 64%, transparent);
 	}
 
 	.mode-switch button,
-	.ghost-button,
-	.primary-button {
+	.ghost-button {
 		border: 0;
 		color: var(--muted);
 		cursor: pointer;
 		transition:
 			background-color 180ms ease,
 			color 180ms ease,
-			border-color 180ms ease,
 			transform 180ms ease;
 	}
 
 	.mode-switch button {
-		min-width: 5.45rem;
-		padding: 0.42rem 0.7rem;
+		min-width: 4.8rem;
+		padding: 0.35rem 0.6rem;
 		border-radius: 999px;
 		background: transparent;
-		font-size: 0.78rem;
-		font-weight: 620;
+		font-size: 0.72rem;
+		font-weight: 600;
 	}
 
 	.mode-switch button.is-active {
@@ -170,290 +121,359 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 		color: var(--bg);
 	}
 
-	.ghost-button,
-	.primary-button {
-		border: 1px solid var(--border);
-		border-radius: 999px;
-		background: transparent;
-		font-size: 0.78rem;
-		font-weight: 620;
+	.topbar-right {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.score-inline {
+		display: flex;
+		align-items: baseline;
+		gap: 0.25rem;
+		font-size: 0.72rem;
+		font-weight: 600;
+	}
+
+	.score-p {
+		color: var(--muted-soft);
+		font-size: 0.64rem;
+		font-weight: 600;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+	}
+
+	.score-inline strong {
+		color: var(--text-strong);
+		font-size: 0.82rem;
+		font-weight: 650;
+	}
+
+	.score-sep {
+		color: var(--muted-soft);
+		opacity: 0.4;
+		font-size: 0.7rem;
+	}
+
+	.score-draw-label {
+		color: var(--muted-soft);
+		font-size: 0.64rem;
+		font-weight: 600;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
 	}
 
 	.ghost-button {
-		padding: 0.48rem 0.75rem;
-	}
-
-	.primary-button {
-		padding: 0.62rem 0.9rem;
-		background: var(--text-strong);
-		color: var(--bg);
-	}
-
-	.ghost-button:hover,
-	.primary-button:hover {
-		transform: translateY(-1px);
+		padding: 0.38rem 0.6rem;
+		border: 1px solid var(--border);
+		border-radius: 999px;
+		background: transparent;
+		font-size: 0.72rem;
+		font-weight: 600;
 	}
 
 	.ghost-button:hover {
 		border-color: var(--border-strong);
 		color: var(--text-strong);
+		transform: translateY(-1px);
 	}
 
-	.score-grid {
-		display: grid;
-		grid-template-columns: repeat(3, 1fr);
-		gap: 1px;
-		background: var(--border);
-	}
-
-	.score-grid div {
-		padding: 0.62rem 0.5rem;
-		background: color-mix(in srgb, var(--surface) 88%, transparent);
-	}
-
-	.score-grid span,
-	.score-grid strong {
-		display: block;
-		text-align: center;
-	}
-
-	.score-grid span {
-		color: var(--muted-soft);
-		font-size: 0.66rem;
-		font-weight: 650;
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
-	}
-
-	.score-grid strong {
-		margin-top: 0.2rem;
-		color: var(--text-strong);
-		font-size: 1.22rem;
-		font-weight: 650;
-		line-height: 1;
-	}
-
-	.game-status {
-		margin: 0;
-		min-height: 2.35rem;
-		padding: 0.72rem 1rem 0;
-		color: var(--text-strong);
-		font-size: 0.86rem;
-		font-weight: 580;
-		text-align: center;
-	}
-
-	.board-wrap {
+	.canvas-wrap {
 		display: grid;
 		place-items: center;
-		padding: 0.65rem 1rem 0.6rem;
+		padding: 0.8rem;
 	}
 
-	.ttt-board {
-		display: grid;
-		grid-template-columns: repeat(3, minmax(0, 1fr));
-		grid-template-rows: repeat(3, minmax(0, 1fr));
-		width: min(100%, 15.65rem);
-		aspect-ratio: 1;
-		gap: 0.42rem;
-	}
-
-	.ttt-cell {
-		display: grid;
-		place-items: center;
+	#ttt-canvas {
 		width: 100%;
-		min-width: 0;
 		aspect-ratio: 1;
-		border: 1px solid var(--border);
 		border-radius: 0.45rem;
-		background: color-mix(in srgb, var(--bg) 72%, transparent);
-		color: var(--text-strong);
 		cursor: pointer;
-		font-size: clamp(1.7rem, 9vw, 3rem);
-		font-weight: 520;
-		line-height: 1;
-		text-align: center;
-		box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text-strong) 6%, transparent);
-		transition:
-			border-color 180ms ease,
-			background-color 180ms ease,
-			box-shadow 180ms ease;
 	}
 
-	.ttt-cell:hover:not(:disabled) {
-		border-color: var(--border-strong);
-		box-shadow:
-			inset 0 1px 0 color-mix(in srgb, var(--text-strong) 10%, transparent),
-			0 0 24px color-mix(in srgb, var(--text-strong) 7%, transparent);
-	}
-
-	.ttt-cell:disabled {
-		cursor: default;
-	}
-
-	.ttt-cell.is-x {
-		color: var(--text-strong);
-	}
-
-	.ttt-cell.is-o {
-		color: var(--muted);
-	}
-
-	.ttt-cell.is-win {
-		border-color: color-mix(in srgb, var(--text-strong) 42%, transparent);
-		background: color-mix(in srgb, var(--text-strong) 9%, var(--surface));
-		box-shadow: 0 0 28px color-mix(in srgb, var(--text-strong) 12%, transparent);
-	}
-
-	.round-actions {
-		display: flex;
-		justify-content: center;
-		padding: 0 1rem 0.75rem;
-	}
-
-	@media (max-width: 720px) {
+	@media (max-width: 520px) {
 		.game-shell {
 			width: min(100% - 1rem, 680px);
-			padding-top: 1.35rem;
+			padding-top: 2.5rem;
 		}
 
-		.game-hero h1 {
-			font-size: clamp(2rem, 12vw, 3rem);
-		}
-
-		.ttt-topbar {
-			align-items: stretch;
-			flex-direction: column;
-		}
-
-		.mode-switch,
-		.ghost-button {
-			width: 100%;
+		.game-topbar {
+			flex-wrap: wrap;
 		}
 
 		.mode-switch button {
-			flex: 1;
-			min-width: 0;
+			min-width: 4rem;
+			padding: 0.3rem 0.5rem;
+			font-size: 0.68rem;
 		}
 
-		.score-grid div {
-			padding: 0.58rem 0.35rem;
+		.score-inline {
+			font-size: 0.66rem;
 		}
 
-		.score-grid strong {
-			font-size: 1.1rem;
+		.score-inline strong {
+			font-size: 0.76rem;
 		}
 
-		.ttt-board {
-			width: min(100%, 14.75rem);
-			gap: 0.36rem;
-		}
-
-		.ttt-cell {
-			border-radius: 0.4rem;
+		.ghost-button {
+			padding: 0.32rem 0.5rem;
+			font-size: 0.68rem;
 		}
 	}
 </style>
 
 <script>
-	const cells = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-cell]'));
-	const statusEl = document.querySelector<HTMLElement>('[data-status]');
-	const nextButton = document.querySelector<HTMLButtonElement>('[data-next]');
+	const canvas = document.getElementById('ttt-canvas') as HTMLCanvasElement;
+	const ctx = canvas.getContext('2d')!;
 	const resetButton = document.querySelector<HTMLButtonElement>('[data-reset]');
 	const modeButtons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-mode]'));
-	const scoreX = document.querySelector<HTMLElement>('[data-score-x]');
-	const scoreO = document.querySelector<HTMLElement>('[data-score-o]');
-	const scoreDraws = document.querySelector<HTMLElement>('[data-score-draws]');
+	const scoreXEl = document.querySelector<HTMLElement>('[data-score-x]');
+	const scoreOEl = document.querySelector<HTMLElement>('[data-score-o]');
+	const scoreDrawsEl = document.querySelector<HTMLElement>('[data-score-draws]');
 	const scoreLabelX = document.querySelector<HTMLElement>('[data-score-label-x]');
 	const scoreLabelO = document.querySelector<HTMLElement>('[data-score-label-o]');
 
-	const wins = [
-		[0, 1, 2],
-		[3, 4, 5],
-		[6, 7, 8],
-		[0, 3, 6],
-		[1, 4, 7],
-		[2, 5, 8],
-		[0, 4, 8],
-		[2, 4, 6],
-	];
+	const DPR = window.devicePixelRatio || 1;
+	const GAP = 10;
+	const RADIUS = 6;
 
-	let board = Array<string>(9).fill('');
 	let mode = 'computer';
+	let board: (string | null)[] = Array(9).fill(null);
 	let turn = 'X';
 	let startingMark = 'X';
 	let gameOver = false;
 	let scores = { x: 0, o: 0, draws: 0 };
+	let winLine: number[] = [];
+
+	// Animation
+	interface PlaceAnim {
+		cell: number;
+		mark: string;
+		t: number; // 0 to 1
+		mergeFlash: boolean;
+	}
+	let placeAnims: PlaceAnim[] = [];
+	let animating = false;
 
 	const humanMark = 'X';
 	const computerMark = 'O';
 
-	function winnerFor(nextBoard: string[]) {
+	const wins = [
+		[0, 1, 2], [3, 4, 5], [6, 7, 8],
+		[0, 3, 6], [1, 4, 7], [2, 5, 8],
+		[0, 4, 8], [2, 4, 6],
+	];
+
+	function resizeCanvas() {
+		const rect = canvas.getBoundingClientRect();
+		canvas.width = rect.width * DPR;
+		canvas.height = rect.height * DPR;
+		ctx.setTransform(1, 0, 0, 1, 0, 0);
+		ctx.scale(DPR, DPR);
+	}
+
+	function cellPx() {
+		const rect = canvas.getBoundingClientRect();
+		return (rect.width - GAP * 4) / 3;
+	}
+
+	function cellPos(i: number) {
+		const cs = cellPx();
+		const col = i % 3;
+		const row = Math.floor(i / 3);
+		return {
+			x: GAP + col * (cs + GAP),
+			y: GAP + row * (cs + GAP),
+			w: cs,
+			h: cs,
+		};
+	}
+
+	function winnerFor(b: (string | null)[]) {
 		for (const line of wins) {
-			const [a, b, c] = line;
-			if (nextBoard[a] && nextBoard[a] === nextBoard[b] && nextBoard[a] === nextBoard[c]) {
-				return { mark: nextBoard[a], line };
+			const [a, c, e] = line;
+			if (b[a] && b[a] === b[c] && b[a] === b[e]) {
+				return { mark: b[a]!, line };
 			}
 		}
-
-		if (nextBoard.every(Boolean)) {
-			return { mark: 'draw', line: [] };
-		}
-
+		if (b.every(Boolean)) return { mark: 'draw', line: [] as number[] };
 		return null;
 	}
 
 	function updateScores() {
-		if (!scoreX || !scoreO || !scoreDraws || !scoreLabelX || !scoreLabelO) return;
-		scoreX.textContent = String(scores.x);
-		scoreO.textContent = String(scores.o);
-		scoreDraws.textContent = String(scores.draws);
-		scoreLabelX.textContent = mode === 'computer' ? 'You' : 'Player X';
-		scoreLabelO.textContent = mode === 'computer' ? 'Computer' : 'Player O';
+		if (!scoreXEl || !scoreOEl || !scoreDrawsEl || !scoreLabelX || !scoreLabelO) return;
+		scoreXEl.textContent = String(scores.x);
+		scoreOEl.textContent = String(scores.o);
+		scoreDrawsEl.textContent = String(scores.draws);
+		scoreLabelX.textContent = mode === 'computer' ? 'You' : 'P X';
+		scoreLabelO.textContent = mode === 'computer' ? 'CPU' : 'P O';
 	}
 
-	function statusForTurn() {
-		if (!statusEl) return;
-		if (mode === 'computer') {
-			statusEl.textContent = turn === humanMark ? 'Your turn.' : 'Computer is thinking.';
+	function draw() {
+		const rect = canvas.getBoundingClientRect();
+		const w = rect.width;
+		const h = rect.height;
+		ctx.clearRect(0, 0, w, h);
+
+		const dark = document.documentElement.dataset.theme !== 'light';
+		const cs = cellPx();
+		const cellBg = dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)';
+		const lineColor = dark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)';
+		const mutedLine = dark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.2)';
+		const winGlow = dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)';
+
+		// Cell backgrounds
+		for (let i = 0; i < 9; i++) {
+			const { x, y, w: cw, h: ch } = cellPos(i);
+			const isWin = winLine.includes(i);
+
+			if (isWin) {
+				const g = ctx.createRadialGradient(x + cw / 2, y + ch / 2, 0, x + cw / 2, y + ch / 2, cw * 0.7);
+				g.addColorStop(0, winGlow);
+				g.addColorStop(1, 'rgba(0,0,0,0)');
+				ctx.fillStyle = g;
+				ctx.beginPath();
+				ctx.arc(x + cw / 2, y + ch / 2, cw * 0.7, 0, Math.PI * 2);
+				ctx.fill();
+			}
+
+			ctx.fillStyle = cellBg;
+			ctx.beginPath();
+			ctx.roundRect(x, y, cw, ch, RADIUS);
+			ctx.fill();
+		}
+
+		// Marks
+		for (let i = 0; i < 9; i++) {
+			const mark = board[i];
+			if (!mark) continue;
+
+			const { x, y, w: cw, h: ch } = cellPos(i);
+			const cx = x + cw / 2;
+			const cy = y + ch / 2;
+			const pad = cw * 0.22;
+
+			// Check for active animation
+			const anim = placeAnims.find((a) => a.cell === i);
+			const t = anim ? easeOutBack(anim.t) : 1;
+
+			if (mark === 'X') {
+				const color = dark ? '#ffffff' : '#09090b';
+				const lw = cw * 0.1;
+				const s = pad * t;
+				const e = cw - pad * t;
+
+				ctx.strokeStyle = color;
+				ctx.lineWidth = lw;
+				ctx.lineCap = 'round';
+
+				ctx.beginPath();
+				ctx.moveTo(x + s, y + s);
+				ctx.lineTo(x + e, y + e);
+				ctx.stroke();
+
+				ctx.beginPath();
+				ctx.moveTo(x + e, y + s);
+				ctx.lineTo(x + s, y + e);
+				ctx.stroke();
+			} else {
+				const color = dark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.35)';
+				const r = (cw / 2 - pad) * t;
+
+				ctx.strokeStyle = color;
+				ctx.lineWidth = cw * 0.08;
+				ctx.beginPath();
+				ctx.arc(cx, cy, r, 0, Math.PI * 2);
+				ctx.stroke();
+			}
+		}
+
+		// Win line highlight
+		if (winLine.length > 0) {
+			const start = cellPos(winLine[0]);
+			const end = cellPos(winLine[winLine.length - 1]);
+			const sx = start.x + start.w / 2;
+			const sy = start.y + start.h / 2;
+			const ex = end.x + end.w / 2;
+			const ey = end.y + end.h / 2;
+
+			const accent = dark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)';
+			ctx.strokeStyle = accent;
+			ctx.lineWidth = 3;
+			ctx.lineCap = 'round';
+			ctx.beginPath();
+			ctx.moveTo(sx, sy);
+			ctx.lineTo(ex, ey);
+			ctx.stroke();
+		}
+
+		// Overlay
+		if (gameOver) {
+			ctx.fillStyle = dark ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.45)';
+			ctx.fillRect(0, 0, w, h);
+
+			ctx.fillStyle = dark ? '#ffffff' : '#09090b';
+			ctx.textAlign = 'center';
+			ctx.textBaseline = 'middle';
+
+			let text = '';
+			if (winLine.length > 0) {
+				const winner = board[winLine[0]];
+				if (mode === 'computer') {
+					text = winner === humanMark ? 'You win.' : 'Computer wins.';
+				} else {
+					text = `Player ${winner} wins.`;
+				}
+			} else {
+				text = 'Draw.';
+			}
+
+			ctx.font = '650 22px Inter, system-ui, sans-serif';
+			ctx.fillText(text, w / 2, h / 2 - 10);
+			ctx.font = '500 11px Inter, system-ui, sans-serif';
+			ctx.fillStyle = dark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.4)';
+			ctx.fillText('Click to play again', w / 2, h / 2 + 12);
+		}
+	}
+
+	function easeOutBack(t: number) {
+		const c = 1.70158;
+		return 1 + (t - 1) * (t - 1) * ((c + 1) * (t - 1) + c);
+	}
+
+	// Animation loop
+	let lastAnimTime = 0;
+
+	function animLoop(ts: number) {
+		if (!animating) return;
+
+		const dt = lastAnimTime ? (ts - lastAnimTime) / 1000 : 0.016;
+		lastAnimTime = ts;
+
+		let done = true;
+		for (const a of placeAnims) {
+			if (a.t < 1) {
+				a.t = Math.min(1, a.t + dt * 6);
+				done = false;
+			}
+		}
+
+		draw();
+
+		if (done) {
+			animating = false;
+			placeAnims = [];
 			return;
 		}
 
-		statusEl.textContent = `Player ${turn}'s turn.`;
+		requestAnimationFrame(animLoop);
 	}
 
-	function render() {
-		cells.forEach((cell, index) => {
-			const value = board[index];
-			cell.textContent = value;
-			cell.disabled = gameOver || Boolean(value) || (mode === 'computer' && turn === computerMark);
-			cell.classList.toggle('is-x', value === 'X');
-			cell.classList.toggle('is-o', value === 'O');
-			cell.classList.remove('is-win');
-			cell.setAttribute('aria-label', value ? `Cell ${index + 1}, ${value}` : `Cell ${index + 1}, empty`);
-		});
-		updateScores();
-		statusForTurn();
-	}
-
-	function finish(result: { mark: string; line: number[] }) {
-		gameOver = true;
-
-		result.line.forEach((index) => cells[index]?.classList.add('is-win'));
-
-		if (result.mark === 'draw') {
-			scores.draws += 1;
-			if (statusEl) statusEl.textContent = 'Draw. A clean stalemate.';
-		} else if (result.mark === 'X') {
-			scores.x += 1;
-			if (statusEl) statusEl.textContent = mode === 'computer' ? 'You win.' : 'Player X wins.';
-		} else {
-			scores.o += 1;
-			if (statusEl) statusEl.textContent = mode === 'computer' ? 'Computer wins.' : 'Player O wins.';
-		}
-
-		updateScores();
-		cells.forEach((cell) => (cell.disabled = true));
+	function startAnim() {
+		if (animating) return;
+		animating = true;
+		lastAnimTime = 0;
+		requestAnimationFrame(animLoop);
 	}
 
 	function play(index: number) {
@@ -461,27 +481,28 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 		if (mode === 'computer' && turn === computerMark) return;
 
 		board[index] = turn;
+		placeAnims.push({ cell: index, mark: turn, t: 0, mergeFlash: false });
+		startAnim();
+
 		const result = winnerFor(board);
 		if (result) {
-			render();
 			finish(result);
 			return;
 		}
 
 		turn = turn === 'X' ? 'O' : 'X';
-		render();
 
 		if (mode === 'computer' && turn === computerMark) {
-			window.setTimeout(computerMove, 360);
+			setTimeout(computerMove, 350);
 		}
 	}
 
 	function findWinningMove(mark: string) {
-		for (let index = 0; index < board.length; index += 1) {
-			if (board[index]) continue;
-			const candidate = [...board];
-			candidate[index] = mark;
-			if (winnerFor(candidate)?.mark === mark) return index;
+		for (let i = 0; i < 9; i++) {
+			if (board[i]) continue;
+			const c = [...board];
+			c[i] = mark;
+			if (winnerFor(c)?.mark === mark) return i;
 		}
 		return -1;
 	}
@@ -492,58 +513,118 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 		let move = findWinningMove(computerMark);
 		if (move < 0) move = findWinningMove(humanMark);
 		if (move < 0 && !board[4]) move = 4;
-		const fallbackOrder = [0, 2, 6, 8, 1, 3, 5, 7];
-		const index = move >= 0 ? move : fallbackOrder.find((slot) => !board[slot]);
+		const fallback = [0, 2, 6, 8, 1, 3, 5, 7];
+		const idx = move >= 0 ? move : fallback.find((s) => !board[s]);
+		if (idx === undefined) return;
 
-		if (index === undefined) return;
+		board[idx] = computerMark;
+		placeAnims.push({ cell: idx, mark: computerMark, t: 0, mergeFlash: false });
+		startAnim();
 
-		board[index] = computerMark;
 		const result = winnerFor(board);
 		if (result) {
-			render();
 			finish(result);
 			return;
 		}
 
 		turn = humanMark;
-		render();
+	}
+
+	function finish(result: { mark: string; line: number[] }) {
+		gameOver = true;
+		winLine = result.line;
+
+		if (result.mark === 'draw') {
+			scores.draws += 1;
+		} else if (result.mark === 'X') {
+			scores.x += 1;
+		} else {
+			scores.o += 1;
+		}
+
+		updateScores();
+
+		// Delay overlay to let last animation finish
+		setTimeout(draw, 350);
 	}
 
 	function nextRound() {
 		startingMark = startingMark === 'X' ? 'O' : 'X';
-		board = Array<string>(9).fill('');
+		board = Array(9).fill(null);
 		turn = startingMark;
 		gameOver = false;
-		render();
+		winLine = [];
+		placeAnims = [];
+		animating = false;
+		draw();
 
 		if (mode === 'computer' && turn === computerMark) {
-			window.setTimeout(computerMove, 420);
+			setTimeout(computerMove, 400);
 		}
 	}
 
 	function resetGame() {
 		scores = { x: 0, o: 0, draws: 0 };
 		startingMark = 'X';
-		board = Array<string>(9).fill('');
+		board = Array(9).fill(null);
 		turn = startingMark;
 		gameOver = false;
-		render();
+		winLine = [];
+		placeAnims = [];
+		animating = false;
+		updateScores();
+		draw();
 	}
 
-	cells.forEach((cell, index) => {
-		cell.addEventListener('click', () => play(index));
-	});
+	// Click / tap
+	function handleClick(e: MouseEvent | TouchEvent) {
+		if (gameOver) {
+			nextRound();
+			return;
+		}
 
-	nextButton?.addEventListener('click', nextRound);
+		const rect = canvas.getBoundingClientRect();
+		let clientX: number, clientY: number;
+
+		if (e instanceof TouchEvent) {
+			const t = e.touches[0];
+			clientX = t.clientX;
+			clientY = t.clientY;
+		} else {
+			clientX = e.clientX;
+			clientY = e.clientY;
+		}
+
+		const mx = clientX - rect.left;
+		const my = clientY - rect.top;
+
+		for (let i = 0; i < 9; i++) {
+			const { x, y, w, h } = cellPos(i);
+			if (mx >= x && mx <= x + w && my >= y && my <= y + h) {
+				play(i);
+				break;
+			}
+		}
+	}
+
+	canvas.addEventListener('click', handleClick);
+	canvas.addEventListener('touchend', (e) => {
+		e.preventDefault();
+		handleClick(e);
+	}, { passive: false });
+
 	resetButton?.addEventListener('click', resetGame);
 
-	modeButtons.forEach((button) => {
-		button.addEventListener('click', () => {
-			mode = button.dataset.mode || 'computer';
-			modeButtons.forEach((item) => item.classList.toggle('is-active', item === button));
+	modeButtons.forEach((btn) => {
+		btn.addEventListener('click', () => {
+			mode = btn.dataset.mode || 'computer';
+			modeButtons.forEach((b) => b.classList.toggle('is-active', b === btn));
 			resetGame();
 		});
 	});
 
-	render();
+	// Init
+	resizeCanvas();
+	resetGame();
+	window.addEventListener('resize', () => { resizeCanvas(); draw(); });
 </script>

@@ -1,0 +1,595 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+	title="Minesweeper"
+	description="A minimal Minesweeper game."
+>
+	<main class="game-shell">
+		<section class="game-panel fade-in" aria-label="Minesweeper game">
+			<div class="game-topbar">
+				<div class="score-display">
+					<span class="score-label">Mines</span>
+					<strong class="score-value" data-mines>10</strong>
+				</div>
+				<div class="topbar-right">
+					<div class="size-switch" role="group" aria-label="Board size" data-size-group>
+						<button type="button" data-size="small">Small</button>
+						<button type="button" class="is-active" data-size="medium">Med</button>
+						<button type="button" data-size="large">Large</button>
+					</div>
+					<button type="button" class="ghost-button" data-reset>New game</button>
+				</div>
+			</div>
+
+			<div class="canvas-wrap">
+				<canvas id="mines-canvas" aria-label="Minesweeper board"></canvas>
+			</div>
+		</section>
+	</main>
+</BaseLayout>
+
+<style>
+	.game-shell {
+		width: min(100% - 2rem, 680px);
+		margin: 0 auto;
+		padding: 4rem 0 3rem;
+		display: flex;
+		justify-content: center;
+	}
+
+	.game-panel {
+		position: relative;
+		overflow: hidden;
+		width: 100%;
+		max-width: 440px;
+		border: 1px solid var(--border);
+		border-radius: 0.8rem;
+		background:
+			radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--text-strong) 9%, transparent), transparent 16rem),
+			color-mix(in srgb, var(--surface) 82%, transparent);
+		box-shadow:
+			0 0 0 1px color-mix(in srgb, var(--text-strong) 3%, transparent),
+			0 18px 60px rgba(0, 0, 0, 0.26);
+	}
+
+	.game-panel::before {
+		position: absolute;
+		inset: -6rem -5rem auto;
+		height: 14rem;
+		pointer-events: none;
+		background:
+			radial-gradient(circle, color-mix(in srgb, var(--text-strong) 22%, transparent), transparent 58%),
+			radial-gradient(circle at 24% 56%, rgba(143, 171, 255, 0.18), transparent 34%),
+			radial-gradient(circle at 76% 54%, rgba(255, 255, 255, 0.12), transparent 34%);
+		filter: blur(18px);
+		opacity: 0.34;
+		content: "";
+	}
+
+	.game-topbar,
+	.canvas-wrap {
+		position: relative;
+		z-index: 1;
+	}
+
+	.game-topbar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+		padding: 0.5rem 0.6rem;
+		border-bottom: 1px solid var(--border);
+	}
+
+	.score-display {
+		display: flex;
+		align-items: baseline;
+		gap: 0.4rem;
+	}
+
+	.score-label {
+		color: var(--muted-soft);
+		font-size: 0.68rem;
+		font-weight: 650;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+	}
+
+	.score-value {
+		color: var(--text-strong);
+		font-size: 1.1rem;
+		font-weight: 650;
+		line-height: 1;
+	}
+
+	.topbar-right {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+	}
+
+	.size-switch {
+		display: inline-flex;
+		padding: 0.15rem;
+		border: 1px solid var(--border);
+		border-radius: 999px;
+		background: color-mix(in srgb, var(--bg) 64%, transparent);
+	}
+
+	.size-switch button,
+	.ghost-button {
+		border: 0;
+		color: var(--muted);
+		cursor: pointer;
+		transition:
+			background-color 180ms ease,
+			color 180ms ease,
+			transform 180ms ease;
+	}
+
+	.size-switch button {
+		min-width: 3rem;
+		padding: 0.35rem 0.5rem;
+		border-radius: 999px;
+		background: transparent;
+		font-size: 0.68rem;
+		font-weight: 600;
+	}
+
+	.size-switch button.is-active {
+		background: var(--text-strong);
+		color: var(--bg);
+	}
+
+	.ghost-button {
+		padding: 0.38rem 0.6rem;
+		border: 1px solid var(--border);
+		border-radius: 999px;
+		background: transparent;
+		font-size: 0.72rem;
+		font-weight: 600;
+	}
+
+	.ghost-button:hover {
+		border-color: var(--border-strong);
+		color: var(--text-strong);
+		transform: translateY(-1px);
+	}
+
+	.canvas-wrap {
+		display: grid;
+		place-items: center;
+		padding: 0.6rem;
+	}
+
+	#mines-canvas {
+		width: 100%;
+		aspect-ratio: 1;
+		border-radius: 0.45rem;
+		touch-action: none;
+		cursor: pointer;
+	}
+
+	@media (max-width: 520px) {
+		.game-shell {
+			width: min(100% - 1rem, 680px);
+			padding-top: 2.5rem;
+		}
+
+		.size-switch button {
+			min-width: 2.4rem;
+			padding: 0.3rem 0.4rem;
+			font-size: 0.64rem;
+		}
+
+		.ghost-button {
+			padding: 0.32rem 0.5rem;
+			font-size: 0.68rem;
+		}
+	}
+</style>
+
+<script>
+	const canvas = document.getElementById('mines-canvas') as HTMLCanvasElement;
+	const ctx = canvas.getContext('2d')!;
+	const minesEl = document.querySelector<HTMLElement>('[data-mines]');
+	const resetButton = document.querySelector<HTMLButtonElement>('[data-reset]');
+	const sizeButtons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-size]'));
+
+	const DPR = window.devicePixelRatio || 1;
+	const GAP = 3;
+	const RADIUS = 3;
+
+	const sizes = {
+		small:  { rows: 8,  cols: 8,  mines: 10 },
+		medium: { rows: 10, cols: 10, mines: 15 },
+		large:  { rows: 12, cols: 12, mines: 25 },
+	};
+
+	let boardSize = 'medium';
+	let rows = 10;
+	let cols = 10;
+	let mineCount = 15;
+	let board: (number | null)[][] = []; // -1 = mine, null = unrevealed, 0-8 = adjacent count
+	let revealed: boolean[][] = [];
+	let flagged: boolean[][] = [];
+	let gameOver = false;
+	let firstClick = true;
+	let flagCount = 0;
+
+	function resizeCanvas() {
+		const rect = canvas.getBoundingClientRect();
+		canvas.width = rect.width * DPR;
+		canvas.height = rect.height * DPR;
+		ctx.setTransform(1, 0, 0, 1, 0, 0);
+		ctx.scale(DPR, DPR);
+	}
+
+	function cellPx() {
+		const rect = canvas.getBoundingClientRect();
+		const maxW = (rect.width - GAP * (cols + 1)) / cols;
+		const maxH = (rect.height - GAP * (rows + 1)) / rows;
+		return Math.min(maxW, maxH);
+	}
+
+	function cellPos(r: number, c: number) {
+		const cs = cellPx();
+		const totalW = cols * cs + (cols + 1) * GAP;
+		const totalH = rows * cs + (rows + 1) * GAP;
+		const offsetX = (canvas.getBoundingClientRect().width - totalW) / 2;
+		const offsetY = (canvas.getBoundingClientRect().height - totalH) / 2;
+		return {
+			x: offsetX + GAP + c * (cs + GAP),
+			y: offsetY + GAP + r * (cs + GAP),
+			w: cs,
+			h: cs,
+		};
+	}
+
+	function initBoard() {
+		board = Array.from({ length: rows }, () => Array(cols).fill(null));
+		revealed = Array.from({ length: rows }, () => Array(cols).fill(false));
+		flagged = Array.from({ length: rows }, () => Array(cols).fill(false));
+		gameOver = false;
+		firstClick = true;
+		flagCount = 0;
+		if (minesEl) minesEl.textContent = String(mineCount);
+	}
+
+	function placeMines(safeR: number, safeC: number) {
+		const safe = new Set<string>();
+		for (let dr = -1; dr <= 1; dr++) {
+			for (let dc = -1; dc <= 1; dc++) {
+				const nr = safeR + dr;
+				const nc = safeC + dc;
+				if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) safe.add(`${nr},${nc}`);
+			}
+		}
+
+		let placed = 0;
+		while (placed < mineCount) {
+			const r = Math.floor(Math.random() * rows);
+			const c = Math.floor(Math.random() * cols);
+			if (board[r][c] === -1 || safe.has(`${r},${c}`)) continue;
+			board[r][c] = -1;
+			placed++;
+		}
+
+		// Calculate numbers
+		for (let r = 0; r < rows; r++) {
+			for (let c = 0; c < cols; c++) {
+				if (board[r][c] === -1) continue;
+				let count = 0;
+				for (let dr = -1; dr <= 1; dr++) {
+					for (let dc = -1; dc <= 1; dc++) {
+						const nr = r + dr;
+						const nc = c + dc;
+						if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && board[nr][nc] === -1) count++;
+					}
+				}
+				board[r][c] = count;
+			}
+		}
+	}
+
+	function reveal(r: number, c: number) {
+		if (r < 0 || r >= rows || c < 0 || c >= cols) return;
+		if (revealed[r][c] || flagged[r][c]) return;
+		revealed[r][c] = true;
+
+		if (board[r][c] === 0) {
+			for (let dr = -1; dr <= 1; dr++) {
+				for (let dc = -1; dc <= 1; dc++) {
+					reveal(r + dr, c + dc);
+				}
+			}
+		}
+	}
+
+	function checkWin() {
+		for (let r = 0; r < rows; r++) {
+			for (let c = 0; c < cols; c++) {
+				if (board[r][c] !== -1 && !revealed[r][c]) return false;
+			}
+		}
+		return true;
+	}
+
+	function handleClick(r: number, c: number) {
+		if (gameOver || flagged[r][c]) return;
+
+		if (firstClick) {
+			placeMines(r, c);
+			firstClick = false;
+		}
+
+		if (board[r][c] === -1) {
+			// Game over - reveal all mines
+			gameOver = true;
+			for (let rr = 0; rr < rows; rr++) {
+				for (let cc = 0; cc < cols; cc++) {
+					if (board[rr][cc] === -1) revealed[rr][cc] = true;
+				}
+			}
+			draw();
+			return;
+		}
+
+		reveal(r, c);
+
+		if (checkWin()) {
+			gameOver = true;
+		}
+
+		draw();
+	}
+
+	function handleRightClick(r: number, c: number) {
+		if (gameOver || revealed[r][c]) return;
+		flagged[r][c] = !flagged[r][c];
+		flagCount += flagged[r][c] ? 1 : -1;
+		if (minesEl) minesEl.textContent = String(mineCount - flagCount);
+		draw();
+	}
+
+	const NUMBER_COLORS = darkModeFallback();
+
+	function darkModeFallback() {
+		return {
+			1: '#6b9fff',
+			2: '#6bcf8e',
+			3: '#ff7a7a',
+			4: '#b07aff',
+			5: '#ff9a4a',
+			6: '#4ad4d4',
+			7: '#d4a0ff',
+			8: '#aaaaaa',
+		};
+	}
+
+	function draw() {
+		const rect = canvas.getBoundingClientRect();
+		const w = rect.width;
+		const h = rect.height;
+		ctx.clearRect(0, 0, w, h);
+
+		const dark = document.documentElement.dataset.theme !== 'light';
+		const cs = cellPx();
+
+		const unrevealedBg = dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+		const revealedBg = dark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)';
+		const flaggedBg = dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)';
+		const mineBg = dark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)';
+		const textColor = dark ? '#ffffff' : '#09090b';
+		const dimText = dark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.35)';
+
+		const numColors = dark
+			? NUMBER_COLORS
+			: {
+				1: '#3b7dd8',
+				2: '#2d9a5a',
+				3: '#d94040',
+				4: '#7c52c9',
+				5: '#c97820',
+				6: '#20909a',
+				7: '#8a5abf',
+				8: '#888888',
+			};
+
+		for (let r = 0; r < rows; r++) {
+			for (let c = 0; c < cols; c++) {
+				const { x, y } = cellPos(r, c);
+				const isRevealed = revealed[r][c];
+				const isFlagged = flagged[r][c];
+				const isMine = board[r][c] === -1;
+
+				// Background
+				if (isRevealed && isMine) {
+					ctx.fillStyle = mineBg;
+				} else if (isRevealed) {
+					ctx.fillStyle = revealedBg;
+				} else if (isFlagged) {
+					ctx.fillStyle = flaggedBg;
+				} else {
+					ctx.fillStyle = unrevealedBg;
+				}
+
+				ctx.beginPath();
+				ctx.roundRect(x, y, cs, cs, RADIUS);
+				ctx.fill();
+
+				// Border on unrevealed
+				if (!isRevealed) {
+					ctx.strokeStyle = dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)';
+					ctx.lineWidth = 1;
+					ctx.beginPath();
+					ctx.roundRect(x + 0.5, y + 0.5, cs - 1, cs - 1, RADIUS);
+					ctx.stroke();
+				}
+
+				if (isRevealed) {
+					if (isMine) {
+						// Draw mine
+						const cx = x + cs / 2;
+						const cy = y + cs / 2;
+						const r = cs * 0.2;
+						ctx.fillStyle = dark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.65)';
+						ctx.beginPath();
+						ctx.arc(cx, cy, r, 0, Math.PI * 2);
+						ctx.fill();
+						// Spikes
+						ctx.strokeStyle = dark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.65)';
+						ctx.lineWidth = 1.5;
+						for (let i = 0; i < 4; i++) {
+							const angle = (i * Math.PI) / 4;
+							ctx.beginPath();
+							ctx.moveTo(cx + Math.cos(angle) * r * 0.4, cy + Math.sin(angle) * r * 0.4);
+							ctx.lineTo(cx + Math.cos(angle) * r * 1.8, cy + Math.sin(angle) * r * 1.8);
+							ctx.stroke();
+						}
+					} else if (board[r][c]! > 0) {
+						ctx.fillStyle = numColors[board[r][c]! as keyof typeof numColors] || textColor;
+						const fontSize = cs * 0.45;
+						ctx.font = `650 ${fontSize}px Inter, system-ui, sans-serif`;
+						ctx.textAlign = 'center';
+						ctx.textBaseline = 'middle';
+						ctx.fillText(String(board[r][c]), x + cs / 2, y + cs / 2 + 1);
+					}
+				} else if (isFlagged) {
+					// Flag icon
+					const cx = x + cs / 2;
+					const cy = y + cs / 2;
+					const s = cs * 0.3;
+					ctx.fillStyle = dark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.5)';
+					// Flag pole
+					ctx.fillRect(cx - 1, cy - s, 2, s * 2);
+					// Flag triangle
+					ctx.beginPath();
+					ctx.moveTo(cx + 1, cy - s);
+					ctx.lineTo(cx + s * 0.9, cy - s * 0.4);
+					ctx.lineTo(cx + 1, cy + s * 0.1);
+					ctx.fill();
+				}
+			}
+		}
+
+		// Game over overlay
+		if (gameOver) {
+			const isWin = checkWin();
+			ctx.fillStyle = dark ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.45)';
+			ctx.fillRect(0, 0, w, h);
+
+			ctx.fillStyle = dark ? '#ffffff' : '#09090b';
+			ctx.textAlign = 'center';
+			ctx.textBaseline = 'middle';
+
+			ctx.font = '650 22px Inter, system-ui, sans-serif';
+			ctx.fillText(isWin ? 'You win!' : 'Game over', w / 2, h / 2 - 10);
+			ctx.font = '500 11px Inter, system-ui, sans-serif';
+			ctx.fillStyle = dark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.4)';
+			ctx.fillText('Click to play again', w / 2, h / 2 + 12);
+		}
+	}
+
+	// Input
+	function getCell(e: MouseEvent | TouchEvent) {
+		const rect = canvas.getBoundingClientRect();
+		let clientX: number, clientY: number;
+
+		if (e instanceof TouchEvent) {
+			const t = e.touches[0];
+			clientX = t.clientX;
+			clientY = t.clientY;
+		} else {
+			clientX = e.clientX;
+			clientY = e.clientY;
+		}
+
+		const mx = clientX - rect.left;
+		const my = clientY - rect.top;
+
+		for (let r = 0; r < rows; r++) {
+			for (let c = 0; c < cols; c++) {
+				const { x, y, w, h } = cellPos(r, c);
+				if (mx >= x && mx <= x + w && my >= y && my <= y + h) {
+					return { r, c };
+				}
+			}
+		}
+		return null;
+	}
+
+	canvas.addEventListener('click', (e) => {
+		if (gameOver) { resetGame(); return; }
+		const cell = getCell(e);
+		if (cell) handleClick(cell.r, cell.c);
+	});
+
+	canvas.addEventListener('contextmenu', (e) => {
+		e.preventDefault();
+		if (gameOver) return;
+		const cell = getCell(e);
+		if (cell) handleRightClick(cell.r, cell.c);
+	});
+
+	// Long press for flag on mobile
+	let longPressTimer: ReturnType<typeof setTimeout> | null = null;
+	let touchMoved = false;
+
+	canvas.addEventListener('touchstart', (e) => {
+		e.preventDefault();
+		if (gameOver) { resetGame(); return; }
+		touchMoved = false;
+		const cell = getCell(e);
+		if (!cell) return;
+
+		longPressTimer = setTimeout(() => {
+			if (!touchMoved) {
+				handleRightClick(cell.r, cell.c);
+				longPressTimer = null;
+			}
+		}, 400);
+	}, { passive: false });
+
+	canvas.addEventListener('touchmove', () => {
+		touchMoved = true;
+		if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+	});
+
+	canvas.addEventListener('touchend', (e) => {
+		if (longPressTimer) {
+			clearTimeout(longPressTimer);
+			longPressTimer = null;
+			if (!touchMoved) {
+				const cell = getCell(e);
+				if (cell && !gameOver) handleClick(cell.r, cell.c);
+			}
+		}
+	});
+
+	resetButton?.addEventListener('click', resetGame);
+
+	sizeButtons.forEach((btn) => {
+		btn.addEventListener('click', () => {
+			boardSize = btn.dataset.size || 'medium';
+			sizeButtons.forEach((b) => b.classList.toggle('is-active', b === btn));
+			const s = sizes[boardSize as keyof typeof sizes];
+			rows = s.rows;
+			cols = s.cols;
+			mineCount = s.mines;
+			resetGame();
+		});
+	});
+
+	function resetGame() {
+		initBoard();
+		draw();
+	}
+
+	// Init
+	resizeCanvas();
+	resetGame();
+	window.addEventListener('resize', () => { resizeCanvas(); draw(); });
+</script>

@@ -1,0 +1,620 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+	title="Memory"
+	description="A minimal Memory card matching game."
+>
+	<main class="game-shell">
+		<section class="game-panel fade-in" aria-label="Memory game">
+			<div class="game-topbar">
+				<div class="score-display">
+					<span class="score-label">Moves</span>
+					<strong class="score-value" data-moves>0</strong>
+				</div>
+				<div class="topbar-right">
+					<div class="size-switch" role="group" aria-label="Grid size" data-size-group>
+						<button type="button" data-size="easy" class="is-active">Easy</button>
+						<button type="button" data-size="medium">Med</button>
+						<button type="button" data-size="hard">Hard</button>
+					</div>
+					<button type="button" class="ghost-button" data-reset>New game</button>
+				</div>
+			</div>
+
+			<div class="canvas-wrap">
+				<canvas id="memory-canvas" aria-label="Memory game board"></canvas>
+			</div>
+		</section>
+	</main>
+</BaseLayout>
+
+<style>
+	.game-shell {
+		width: min(100% - 2rem, 680px);
+		margin: 0 auto;
+		padding: 4rem 0 3rem;
+		display: flex;
+		justify-content: center;
+	}
+
+	.game-panel {
+		position: relative;
+		overflow: hidden;
+		width: 100%;
+		max-width: 440px;
+		border: 1px solid var(--border);
+		border-radius: 0.8rem;
+		background:
+			radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--text-strong) 9%, transparent), transparent 16rem),
+			color-mix(in srgb, var(--surface) 82%, transparent);
+		box-shadow:
+			0 0 0 1px color-mix(in srgb, var(--text-strong) 3%, transparent),
+			0 18px 60px rgba(0, 0, 0, 0.26);
+	}
+
+	.game-panel::before {
+		position: absolute;
+		inset: -6rem -5rem auto;
+		height: 14rem;
+		pointer-events: none;
+		background:
+			radial-gradient(circle, color-mix(in srgb, var(--text-strong) 22%, transparent), transparent 58%),
+			radial-gradient(circle at 24% 56%, rgba(143, 171, 255, 0.18), transparent 34%),
+			radial-gradient(circle at 76% 54%, rgba(255, 255, 255, 0.12), transparent 34%);
+		filter: blur(18px);
+		opacity: 0.34;
+		content: "";
+	}
+
+	.game-topbar,
+	.canvas-wrap {
+		position: relative;
+		z-index: 1;
+	}
+
+	.game-topbar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+		padding: 0.5rem 0.6rem;
+		border-bottom: 1px solid var(--border);
+	}
+
+	.score-display {
+		display: flex;
+		align-items: baseline;
+		gap: 0.4rem;
+	}
+
+	.score-label {
+		color: var(--muted-soft);
+		font-size: 0.68rem;
+		font-weight: 650;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+	}
+
+	.score-value {
+		color: var(--text-strong);
+		font-size: 1.1rem;
+		font-weight: 650;
+		line-height: 1;
+	}
+
+	.topbar-right {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+	}
+
+	.size-switch {
+		display: inline-flex;
+		padding: 0.15rem;
+		border: 1px solid var(--border);
+		border-radius: 999px;
+		background: color-mix(in srgb, var(--bg) 64%, transparent);
+	}
+
+	.size-switch button,
+	.ghost-button {
+		border: 0;
+		color: var(--muted);
+		cursor: pointer;
+		transition:
+			background-color 180ms ease,
+			color 180ms ease,
+			transform 180ms ease;
+	}
+
+	.size-switch button {
+		min-width: 2.8rem;
+		padding: 0.35rem 0.5rem;
+		border-radius: 999px;
+		background: transparent;
+		font-size: 0.68rem;
+		font-weight: 600;
+	}
+
+	.size-switch button.is-active {
+		background: var(--text-strong);
+		color: var(--bg);
+	}
+
+	.ghost-button {
+		padding: 0.38rem 0.6rem;
+		border: 1px solid var(--border);
+		border-radius: 999px;
+		background: transparent;
+		font-size: 0.72rem;
+		font-weight: 600;
+	}
+
+	.ghost-button:hover {
+		border-color: var(--border-strong);
+		color: var(--text-strong);
+		transform: translateY(-1px);
+	}
+
+	.canvas-wrap {
+		display: grid;
+		place-items: center;
+		padding: 0.6rem;
+	}
+
+	#memory-canvas {
+		width: 100%;
+		aspect-ratio: 1;
+		border-radius: 0.45rem;
+		touch-action: none;
+		cursor: pointer;
+	}
+
+	@media (max-width: 520px) {
+		.game-shell {
+			width: min(100% - 1rem, 680px);
+			padding-top: 2.5rem;
+		}
+
+		.size-switch button {
+			min-width: 2.4rem;
+			padding: 0.3rem 0.4rem;
+			font-size: 0.64rem;
+		}
+
+		.ghost-button {
+			padding: 0.32rem 0.5rem;
+			font-size: 0.68rem;
+		}
+	}
+</style>
+
+<script>
+	const canvas = document.getElementById('memory-canvas') as HTMLCanvasElement;
+	const ctx = canvas.getContext('2d')!;
+	const movesEl = document.querySelector<HTMLElement>('[data-moves]');
+	const resetButton = document.querySelector<HTMLButtonElement>('[data-reset]');
+	const sizeButtons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-size]'));
+
+	const DPR = window.devicePixelRatio || 1;
+	const GAP = 6;
+	const RADIUS = 5;
+
+	const configs = {
+		easy:   { rows: 3, cols: 4 },
+		medium: { rows: 4, cols: 4 },
+		hard:   { rows: 4, cols: 5 },
+	};
+
+	let gridSize = 'easy';
+	let rows = 3;
+	let cols = 4;
+	let moves = 0;
+	let gameOver = false;
+	let flipped: number[] = [];
+let matched: Set<number> = new Set();
+	let cards: { symbol: number; flipped: boolean; matched: boolean; flipT: number }[] = [];
+let lockInput = false;
+
+	// Flip animation
+	let flipAnims: { index: number; t: number; opening: boolean }[] = [];
+let lastFlipTime = 0;
+
+	// Symbol pool (geometric shapes drawn with canvas)
+	const SYMBOLS = [
+		'circle', 'diamond', 'triangle', 'square', 'cross',
+		'hexagon', 'star', 'pentagon', 'ring', 'dots',
+	];
+
+	function resizeCanvas() {
+		const rect = canvas.getBoundingClientRect();
+		canvas.width = rect.width * DPR;
+		canvas.height = rect.height * DPR;
+		ctx.setTransform(1, 0, 0, 1, 0, 0);
+		ctx.scale(DPR, DPR);
+	}
+
+	function cellPx() {
+		const rect = canvas.getBoundingClientRect();
+		const maxW = (rect.width - GAP * (cols + 1)) / cols;
+		const maxH = (rect.height - GAP * (rows + 1)) / rows;
+		return Math.min(maxW, maxH);
+	}
+
+	function cellPos(r: number, c: number) {
+		const cs = cellPx();
+		const totalW = cols * cs + (cols + 1) * GAP;
+		const totalH = rows * cs + (rows + 1) * GAP;
+		const offsetX = (canvas.getBoundingClientRect().width - totalW) / 2;
+		const offsetY = (canvas.getBoundingClientRect().height - totalH) / 2;
+		return {
+			x: offsetX + GAP + c * (cs + GAP),
+			y: offsetY + GAP + r * (cs + GAP),
+			w: cs,
+			h: cs,
+		};
+	}
+
+	function initGame() {
+		const total = rows * cols;
+		const pairs = total / 2;
+		const symbols: number[] = [];
+		for (let i = 0; i < pairs; i++) {
+			symbols.push(i, i);
+		}
+		// Shuffle
+		for (let i = symbols.length - 1; i > 0; i--) {
+			const j = Math.floor(Math.random() * (i + 1));
+			[symbols[i], symbols[j]] = [symbols[j], symbols[i]];
+		}
+
+		cards = symbols.map((s) => ({
+			symbol: s,
+			flipped: false,
+			matched: false,
+			flipT: 0,
+		}));
+
+		flipped = [];
+		matched = new Set();
+		moves = 0;
+		gameOver = false;
+		lockInput = false;
+		flipAnims = [];
+		if (movesEl) movesEl.textContent = '0';
+	}
+
+	function drawSymbol(cx: number, cy: number, size: number, symbolIdx: number, color: string) {
+		const s = size * 0.35;
+		const name = SYMBOLS[symbolIdx % SYMBOLS.length];
+
+		ctx.strokeStyle = color;
+		ctx.fillStyle = color;
+		ctx.lineWidth = Math.max(1.5, size * 0.05);
+		ctx.lineCap = 'round';
+		ctx.lineJoin = 'round';
+
+		switch (name) {
+			case 'circle':
+				ctx.beginPath();
+				ctx.arc(cx, cy, s, 0, Math.PI * 2);
+				ctx.stroke();
+				break;
+			case 'diamond':
+				ctx.beginPath();
+				ctx.moveTo(cx, cy - s);
+				ctx.lineTo(cx + s * 0.8, cy);
+				ctx.lineTo(cx, cy + s);
+				ctx.lineTo(cx - s * 0.8, cy);
+				ctx.closePath();
+				ctx.stroke();
+				break;
+			case 'triangle':
+				ctx.beginPath();
+				ctx.moveTo(cx, cy - s);
+				ctx.lineTo(cx + s * 0.9, cy + s * 0.7);
+				ctx.lineTo(cx - s * 0.9, cy + s * 0.7);
+				ctx.closePath();
+				ctx.stroke();
+				break;
+			case 'square':
+				ctx.strokeRect(cx - s * 0.7, cy - s * 0.7, s * 1.4, s * 1.4);
+				break;
+			case 'cross':
+				ctx.beginPath();
+				ctx.moveTo(cx - s * 0.7, cy - s * 0.7);
+				ctx.lineTo(cx + s * 0.7, cy + s * 0.7);
+				ctx.moveTo(cx + s * 0.7, cy - s * 0.7);
+				ctx.lineTo(cx - s * 0.7, cy + s * 0.7);
+				ctx.stroke();
+				break;
+			case 'hexagon':
+				ctx.beginPath();
+				for (let i = 0; i < 6; i++) {
+					const a = (i * Math.PI) / 3 - Math.PI / 6;
+					const px = cx + Math.cos(a) * s;
+					const py = cy + Math.sin(a) * s;
+					if (i === 0) ctx.moveTo(px, py);
+					else ctx.lineTo(px, py);
+				}
+				ctx.closePath();
+				ctx.stroke();
+				break;
+			case 'star':
+				ctx.beginPath();
+				for (let i = 0; i < 5; i++) {
+					const outerA = (i * 2 * Math.PI) / 5 - Math.PI / 2;
+					const innerA = outerA + Math.PI / 5;
+					const ox = cx + Math.cos(outerA) * s;
+					const oy = cy + Math.sin(outerA) * s;
+					const ix = cx + Math.cos(innerA) * s * 0.45;
+					const iy = cy + Math.sin(innerA) * s * 0.45;
+					if (i === 0) ctx.moveTo(ox, oy);
+					else ctx.lineTo(ox, oy);
+					ctx.lineTo(ix, iy);
+				}
+				ctx.closePath();
+				ctx.stroke();
+				break;
+			case 'pentagon':
+				ctx.beginPath();
+				for (let i = 0; i < 5; i++) {
+					const a = (i * 2 * Math.PI) / 5 - Math.PI / 2;
+					const px = cx + Math.cos(a) * s;
+					const py = cy + Math.sin(a) * s;
+					if (i === 0) ctx.moveTo(px, py);
+					else ctx.lineTo(px, py);
+				}
+				ctx.closePath();
+				ctx.stroke();
+				break;
+			case 'ring':
+				ctx.beginPath();
+				ctx.arc(cx, cy, s, 0, Math.PI * 2);
+				ctx.stroke();
+				ctx.beginPath();
+				ctx.arc(cx, cy, s * 0.5, 0, Math.PI * 2);
+				ctx.stroke();
+				break;
+			case 'dots':
+				const dotR = s * 0.25;
+				ctx.beginPath();
+				ctx.arc(cx - s * 0.4, cy - s * 0.4, dotR, 0, Math.PI * 2);
+				ctx.fill();
+				ctx.beginPath();
+				ctx.arc(cx + s * 0.4, cy - s * 0.4, dotR, 0, Math.PI * 2);
+				ctx.fill();
+				ctx.beginPath();
+				ctx.arc(cx, cy + s * 0.3, dotR, 0, Math.PI * 2);
+				ctx.fill();
+				break;
+		}
+	}
+
+	function easeOutBack(t: number) {
+		const c = 1.70158;
+		return 1 + (t - 1) * (t - 1) * ((c + 1) * (t - 1) + c);
+	}
+
+	function draw() {
+		const rect = canvas.getBoundingClientRect();
+		const w = rect.width;
+		const h = rect.height;
+		ctx.clearRect(0, 0, w, h);
+
+		const dark = document.documentElement.dataset.theme !== 'light';
+		const cs = cellPx();
+
+		const backBg = dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+		const backBorder = dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)';
+		const frontBg = dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)';
+		const matchedBg = dark ? 'rgba(255,255,255,0.015)' : 'rgba(0,0,0,0.015)';
+		const symbolColor = dark ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.65)';
+		const matchedSymbol = dark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)';
+
+		// Build flip animation map
+		const flipMap = new Map<number, number>();
+		for (const fa of flipAnims) {
+			flipMap.set(fa.index, fa.t);
+		}
+
+		for (let r = 0; r < rows; r++) {
+			for (let c = 0; c < cols; c++) {
+				const idx = r * cols + c;
+				const card = cards[idx];
+				const { x, y, w: cw, h: ch } = cellPos(r, c);
+				const cx = x + cw / 2;
+				const cy = y + ch / 2;
+
+				const flipT = flipMap.get(idx) ?? (card.flipped || card.matched ? 1 : 0);
+				const scaleX = Math.abs(Math.cos(flipT * Math.PI));
+				const isFront = flipT > 0.5;
+
+				// Background
+				if (card.matched) {
+					ctx.fillStyle = matchedBg;
+				} else if (isFront) {
+					ctx.fillStyle = frontBg;
+				} else {
+					ctx.fillStyle = backBg;
+				}
+
+				ctx.beginPath();
+				ctx.roundRect(x, y, cw * Math.max(scaleX, 0.05), ch, RADIUS);
+				ctx.fill();
+
+				// Border on back
+				if (!isFront && !card.matched) {
+					ctx.strokeStyle = backBorder;
+					ctx.lineWidth = 1;
+					ctx.beginPath();
+					ctx.roundRect(x + 0.5, y + 0.5, cw * Math.max(scaleX, 0.05) - 1, ch - 1, RADIUS);
+					ctx.stroke();
+				}
+
+				// Symbol (only when front is showing)
+				if (isFront || card.matched) {
+					const symbolScale = scaleX > 0.3 ? 1 : scaleX / 0.3;
+					const drawCx = x + (cw * Math.max(scaleX, 0.05)) / 2;
+					const col = card.matched ? matchedSymbol : symbolColor;
+					drawSymbol(drawCx, cy, cs * symbolScale, card.symbol, col);
+				}
+			}
+		}
+
+		// Win overlay
+		if (gameOver) {
+			ctx.fillStyle = dark ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.45)';
+			ctx.fillRect(0, 0, w, h);
+
+			ctx.fillStyle = dark ? '#ffffff' : '#09090b';
+			ctx.textAlign = 'center';
+			ctx.textBaseline = 'middle';
+
+			ctx.font = '650 22px Inter, system-ui, sans-serif';
+			ctx.fillText('All matched!', w / 2, h / 2 - 10);
+			ctx.font = '500 11px Inter, system-ui, sans-serif';
+			ctx.fillStyle = dark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.4)';
+			ctx.fillText(`${moves} moves · Click to play again`, w / 2, h / 2 + 12);
+		}
+	}
+
+	// Flip animation loop
+	function flipLoop(ts: number) {
+		if (flipAnims.length === 0) return;
+
+		const dt = lastFlipTime ? (ts - lastFlipTime) / 1000 : 0.016;
+		lastFlipTime = ts;
+
+		let done = true;
+		for (const fa of flipAnims) {
+			if (fa.opening && fa.t < 1) {
+				fa.t = Math.min(1, fa.t + dt * 5);
+				done = false;
+			} else if (!fa.opening && fa.t > 0) {
+				fa.t = Math.max(0, fa.t - dt * 5);
+				done = false;
+			}
+		}
+
+		draw();
+
+		if (!done) {
+			requestAnimationFrame(flipLoop);
+		} else {
+			flipAnims = [];
+		}
+	}
+
+	function getCell(e: MouseEvent | TouchEvent) {
+		const rect = canvas.getBoundingClientRect();
+		let clientX: number, clientY: number;
+
+		if (e instanceof TouchEvent) {
+			const t = e.touches[0];
+			clientX = t.clientX;
+			clientY = t.clientY;
+		} else {
+			clientX = e.clientX;
+			clientY = e.clientY;
+		}
+
+		const mx = clientX - rect.left;
+		const my = clientY - rect.top;
+
+		for (let r = 0; r < rows; r++) {
+			for (let c = 0; c < cols; c++) {
+				const { x, y, w, h } = cellPos(r, c);
+				if (mx >= x && mx <= x + w && my >= y && my <= y + h) {
+					return r * cols + c;
+				}
+			}
+		}
+		return -1;
+	}
+
+	function flipCard(index: number) {
+		if (lockInput || gameOver) return;
+		if (cards[index].flipped || cards[index].matched) return;
+		if (flipped.length >= 2) return;
+
+		cards[index].flipped = true;
+		flipped.push(index);
+
+		// Start flip animation
+		flipAnims.push({ index, t: 0, opening: true });
+		lastFlipTime = 0;
+		requestAnimationFrame(flipLoop);
+
+		if (flipped.length === 2) {
+			moves++;
+			if (movesEl) movesEl.textContent = String(moves);
+
+			const [a, b] = flipped;
+			if (cards[a].symbol === cards[b].symbol) {
+				// Match
+				cards[a].matched = true;
+				cards[b].matched = true;
+				matched.add(a);
+				matched.add(b);
+				flipped = [];
+
+				if (matched.size === cards.length) {
+					gameOver = true;
+					setTimeout(draw, 400);
+				}
+			} else {
+				// No match - flip back
+				lockInput = true;
+				setTimeout(() => {
+					cards[a].flipped = false;
+					cards[b].flipped = false;
+					flipped = [];
+					flipAnims.push({ index: a, t: 1, opening: false });
+					flipAnims.push({ index: b, t: 1, opening: false });
+					lastFlipTime = 0;
+					requestAnimationFrame(flipLoop);
+					lockInput = false;
+				}, 800);
+			}
+		}
+	}
+
+	canvas.addEventListener('click', (e) => {
+		if (gameOver) { resetGame(); return; }
+		const idx = getCell(e);
+		if (idx >= 0) flipCard(idx);
+	});
+
+	canvas.addEventListener('touchend', (e) => {
+		e.preventDefault();
+		if (gameOver) { resetGame(); return; }
+		const idx = getCell(e);
+		if (idx >= 0) flipCard(idx);
+	}, { passive: false });
+
+	resetButton?.addEventListener('click', resetGame);
+
+	sizeButtons.forEach((btn) => {
+		btn.addEventListener('click', () => {
+			gridSize = btn.dataset.size || 'easy';
+			sizeButtons.forEach((b) => b.classList.toggle('is-active', b === btn));
+			const cfg = configs[gridSize as keyof typeof configs];
+			rows = cfg.rows;
+			cols = cfg.cols;
+			resetGame();
+		});
+	});
+
+	function resetGame() {
+		initGame();
+		draw();
+	}
+
+	// Init
+	resizeCanvas();
+	resetGame();
+	window.addEventListener('resize', () => { resizeCanvas(); draw(); });
+</script>

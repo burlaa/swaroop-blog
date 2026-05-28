@@ -1,0 +1,669 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+	title="Pong"
+	description="A minimal Pong game."
+>
+	<main class="game-shell">
+		<section class="pong-panel fade-in" aria-label="Pong game">
+			<div class="pong-topbar">
+				<div class="mode-switch" role="group" aria-label="Game mode">
+					<button type="button" class="is-active" data-mode="computer">Computer</button>
+					<button type="button" data-mode="players">2 Players</button>
+				</div>
+				<div class="topbar-right">
+					<div class="difficulty-switch" role="group" aria-label="Difficulty" data-difficulty-group>
+						<button type="button" data-difficulty="easy">Easy</button>
+						<button type="button" class="is-active" data-difficulty="medium">Med</button>
+						<button type="button" data-difficulty="hard">Hard</button>
+					</div>
+					<button type="button" class="ghost-button" data-reset>Reset</button>
+				</div>
+			</div>
+
+			<div class="canvas-wrap">
+				<canvas id="pong-canvas" aria-label="Pong game board"></canvas>
+			</div>
+		</section>
+	</main>
+</BaseLayout>
+
+<style>
+	.game-shell {
+		width: min(100% - 2rem, 680px);
+		margin: 0 auto;
+		padding: 4rem 0 3rem;
+		display: flex;
+		justify-content: center;
+	}
+
+	.pong-panel {
+		position: relative;
+		overflow: hidden;
+		width: 100%;
+		max-width: 480px;
+		border: 1px solid var(--border);
+		border-radius: 0.8rem;
+		background:
+			radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--text-strong) 9%, transparent), transparent 16rem),
+			color-mix(in srgb, var(--surface) 82%, transparent);
+		box-shadow:
+			0 0 0 1px color-mix(in srgb, var(--text-strong) 3%, transparent),
+			0 18px 60px rgba(0, 0, 0, 0.26);
+	}
+
+	.pong-panel::before {
+		position: absolute;
+		inset: -6rem -5rem auto;
+		height: 14rem;
+		pointer-events: none;
+		background:
+			radial-gradient(circle, color-mix(in srgb, var(--text-strong) 22%, transparent), transparent 58%),
+			radial-gradient(circle at 24% 56%, rgba(143, 171, 255, 0.18), transparent 34%),
+			radial-gradient(circle at 76% 54%, rgba(255, 255, 255, 0.12), transparent 34%);
+		filter: blur(18px);
+		opacity: 0.34;
+		content: "";
+	}
+
+	.pong-topbar,
+	.canvas-wrap {
+		position: relative;
+		z-index: 1;
+	}
+
+	.pong-topbar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+		padding: 0.5rem 0.6rem;
+		border-bottom: 1px solid var(--border);
+	}
+
+	.topbar-right {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+	}
+
+	.mode-switch,
+	.difficulty-switch {
+		display: inline-flex;
+		padding: 0.15rem;
+		border: 1px solid var(--border);
+		border-radius: 999px;
+		background: color-mix(in srgb, var(--bg) 64%, transparent);
+	}
+
+	.mode-switch button,
+	.difficulty-switch button,
+	.ghost-button {
+		border: 0;
+		color: var(--muted);
+		cursor: pointer;
+		transition:
+			background-color 180ms ease,
+			color 180ms ease,
+			transform 180ms ease;
+	}
+
+	.mode-switch button {
+		min-width: 4.8rem;
+		padding: 0.35rem 0.6rem;
+		border-radius: 999px;
+		background: transparent;
+		font-size: 0.72rem;
+		font-weight: 600;
+	}
+
+	.mode-switch button.is-active {
+		background: var(--text-strong);
+		color: var(--bg);
+	}
+
+	.difficulty-switch {
+		transition: opacity 220ms ease, min-width 220ms ease, padding 220ms ease;
+	}
+
+	.difficulty-switch.is-hidden {
+		opacity: 0;
+		pointer-events: none;
+		min-width: 0;
+		padding: 0;
+		border: 0;
+		overflow: hidden;
+	}
+
+	.difficulty-switch button {
+		min-width: 2.6rem;
+		padding: 0.35rem 0.45rem;
+		border-radius: 999px;
+		background: transparent;
+		font-size: 0.68rem;
+		font-weight: 600;
+	}
+
+	.difficulty-switch button.is-active {
+		background: var(--text-strong);
+		color: var(--bg);
+	}
+
+	.ghost-button {
+		padding: 0.38rem 0.6rem;
+		border: 1px solid var(--border);
+		border-radius: 999px;
+		background: transparent;
+		font-size: 0.72rem;
+		font-weight: 600;
+	}
+
+	.ghost-button:hover {
+		border-color: var(--border-strong);
+		color: var(--text-strong);
+		transform: translateY(-1px);
+	}
+
+	.canvas-wrap {
+		display: grid;
+		place-items: center;
+		padding: 0.6rem;
+	}
+
+	#pong-canvas {
+		width: 100%;
+		aspect-ratio: 4 / 3;
+		border-radius: 0.45rem;
+		touch-action: none;
+		cursor: pointer;
+	}
+
+	@media (max-width: 720px) {
+		.game-shell {
+			width: min(100% - 1rem, 680px);
+			padding-top: 2.5rem;
+		}
+
+		.pong-topbar {
+			flex-wrap: wrap;
+		}
+
+		.mode-switch {
+			order: 1;
+		}
+
+		.topbar-right {
+			order: 2;
+			margin-left: auto;
+		}
+
+		.mode-switch button {
+			min-width: 4rem;
+			padding: 0.3rem 0.5rem;
+			font-size: 0.68rem;
+		}
+
+		.difficulty-switch button {
+			min-width: 2.2rem;
+			padding: 0.3rem 0.4rem;
+			font-size: 0.64rem;
+		}
+
+		.ghost-button {
+			padding: 0.32rem 0.5rem;
+			font-size: 0.68rem;
+		}
+	}
+</style>
+
+<script>
+	const canvas = document.getElementById('pong-canvas') as HTMLCanvasElement;
+	const ctx = canvas.getContext('2d')!;
+
+	const startButton = document.querySelector<HTMLButtonElement>('[data-start]');
+	const resetButton = document.querySelector<HTMLButtonElement>('[data-reset]');
+	const modeButtons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-mode]'));
+	const difficultyButtons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-difficulty]'));
+	const difficultyGroup = document.querySelector<HTMLElement>('[data-difficulty-group]');
+
+	const WIN_SCORE = 7;
+	let mode = 'computer';
+	let difficulty = 'medium';
+	let gameRunning = false;
+	let waitingToStart = true;
+	let animFrame = 0;
+	let scores = { p1: 0, p2: 0 };
+	let currentRally = 0;
+	let lastScorer: 1 | 2 = 1;
+	let gameOverText = '';
+
+	// Canvas sizing
+	const DPR = window.devicePixelRatio || 1;
+	const COURT_W = 460;
+	const COURT_H = 345;
+
+	function resizeCanvas() {
+		const rect = canvas.getBoundingClientRect();
+		canvas.width = rect.width * DPR;
+		canvas.height = rect.height * DPR;
+		ctx.setTransform(1, 0, 0, 1, 0, 0);
+		ctx.scale(DPR, DPR);
+	}
+
+	function getScale() {
+		const rect = canvas.getBoundingClientRect();
+		return { sx: rect.width / COURT_W, sy: rect.height / COURT_H };
+	}
+
+	// Game state
+	interface Vec2 { x: number; y: number; }
+
+	const paddleW = 10;
+	const paddleH = 56;
+	const ballSize = 7;
+
+	let p1: Vec2 = { x: 18, y: COURT_H / 2 - paddleH / 2 };
+	let p2: Vec2 = { x: COURT_W - 18 - paddleW, y: COURT_H / 2 - paddleH / 2 };
+	let ball: Vec2 = { x: COURT_W / 2, y: COURT_H / 2 };
+	let ballVel: Vec2 = { x: 0, y: 0 };
+	let p1Target = COURT_H / 2;
+	let p2Target = COURT_H / 2;
+
+	// Trail
+	interface TrailPt { x: number; y: number; age: number; }
+	let trail: TrailPt[] = [];
+
+	// Difficulty
+	function getAIConfig() {
+		if (difficulty === 'easy') return { delay: 14, error: 32, smooth: 0.035 };
+		if (difficulty === 'medium') return { delay: 7, error: 16, smooth: 0.07 };
+		return { delay: 2, error: 5, smooth: 0.13 };
+	}
+
+	function initBall(dir: 1 | -1) {
+		const angle = Math.random() * 0.5 - 0.25;
+		const spd = difficulty === 'easy' ? 3.2 : difficulty === 'medium' ? 4.2 : 5.2;
+		ball = { x: COURT_W / 2, y: COURT_H / 2 };
+		ballVel = { x: dir * spd * Math.cos(angle), y: spd * Math.sin(angle) };
+		trail = [];
+		currentRally = 0;
+	}
+
+	function resetPositions() {
+		p1 = { x: 18, y: COURT_H / 2 - paddleH / 2 };
+		p2 = { x: COURT_W - 18 - paddleW, y: COURT_H / 2 - paddleH / 2 };
+		ball = { x: COURT_W / 2, y: COURT_H / 2 };
+		ballVel = { x: 0, y: 0 };
+		p1Target = COURT_H / 2;
+		p2Target = COURT_H / 2;
+		trail = [];
+	}
+
+	function clamp(v: number, lo: number, hi: number) {
+		return Math.max(lo, Math.min(hi, v));
+	}
+
+	// AI
+	let aiTimer = 0;
+
+	function updateAI() {
+		const cfg = getAIConfig();
+		aiTimer++;
+		if (aiTimer >= cfg.delay) {
+			aiTimer = 0;
+			p2Target = ball.y + (Math.random() - 0.5) * cfg.error * 2;
+		}
+		const center = p2.y + paddleH / 2;
+		const diff = p2Target - center;
+		p2.y += diff * cfg.smooth;
+		p2.y = clamp(p2.y, 0, COURT_H - paddleH);
+	}
+
+	// Physics
+	const PADDLE_SPEED = 5;
+
+	function tick() {
+		const spd = Math.sqrt(ballVel.x * ballVel.x + ballVel.y * ballVel.y);
+		const maxSpd = difficulty === 'easy' ? 5 : difficulty === 'medium' ? 7 : 9;
+		const minSpd = difficulty === 'easy' ? 2.5 : 3;
+
+		// Paddle 1 smooth follow
+		const p1Diff = p1Target - (p1.y + paddleH / 2);
+		p1.y += p1Diff * 0.18;
+		p1.y = clamp(p1.y, 0, COURT_H - paddleH);
+
+		// Paddle 2
+		if (mode === 'computer') {
+			updateAI();
+		} else {
+			const p2Diff = p2Target - (p2.y + paddleH / 2);
+			p2.y += p2Diff * 0.18;
+			p2.y = clamp(p2.y, 0, COURT_H - paddleH);
+		}
+
+		if (ballVel.x === 0 && ballVel.y === 0) return;
+
+		ball.x += ballVel.x;
+		ball.y += ballVel.y;
+
+		// Walls
+		if (ball.y <= ballSize / 2) {
+			ball.y = ballSize / 2;
+			ballVel.y = Math.abs(ballVel.y);
+		} else if (ball.y >= COURT_H - ballSize / 2) {
+			ball.y = COURT_H - ballSize / 2;
+			ballVel.y = -Math.abs(ballVel.y);
+		}
+
+		// P1 collision
+		if (
+			ballVel.x < 0 &&
+			ball.x - ballSize / 2 <= p1.x + paddleW &&
+			ball.x - ballSize / 2 >= p1.x - 3 &&
+			ball.y >= p1.y - ballSize / 2 &&
+			ball.y <= p1.y + paddleH + ballSize / 2
+		) {
+			const hit = (ball.y - (p1.y + paddleH / 2)) / (paddleH / 2);
+			const angle = hit * (Math.PI / 3.5);
+			const s = clamp(spd * 1.05, minSpd, maxSpd);
+			ballVel.x = s * Math.cos(angle);
+			ballVel.y = s * Math.sin(angle);
+			ball.x = p1.x + paddleW + ballSize / 2;
+			currentRally++;
+		}
+
+		// P2 collision
+		if (
+			ballVel.x > 0 &&
+			ball.x + ballSize / 2 >= p2.x &&
+			ball.x + ballSize / 2 <= p2.x + paddleW + 3 &&
+			ball.y >= p2.y - ballSize / 2 &&
+			ball.y <= p2.y + paddleH + ballSize / 2
+		) {
+			const hit = (ball.y - (p2.y + paddleH / 2)) / (paddleH / 2);
+			const angle = Math.PI - hit * (Math.PI / 3.5);
+			const s = clamp(spd * 1.05, minSpd, maxSpd);
+			ballVel.x = s * Math.cos(angle);
+			ballVel.y = s * Math.sin(angle);
+			ball.x = p2.x - ballSize / 2;
+			currentRally++;
+		}
+
+		// Trail
+		trail.push({ x: ball.x, y: ball.y, age: 0 });
+		if (trail.length > 10) trail.shift();
+
+		// Score
+		if (ball.x < -ballSize * 2) {
+			onScore(2);
+		} else if (ball.x > COURT_W + ballSize * 2) {
+			onScore(1);
+		}
+	}
+
+	function onScore(scorer: 1 | 2) {
+		scores[scorer === 1 ? 'p1' : 'p2'] += 1;
+		lastScorer = scorer;
+		currentRally = 0;
+
+		if (scores.p1 >= WIN_SCORE || scores.p2 >= WIN_SCORE) {
+			gameRunning = false;
+			gameOverText = mode === 'computer'
+				? (scorer === 1 ? 'You win.' : 'Computer wins.')
+				: `Player ${scorer} wins.`;
+			draw();
+			return;
+		}
+
+		setTimeout(() => {
+			if (gameRunning) initBall(scorer === 1 ? -1 : 1);
+		}, 500);
+	}
+
+	// Drawing
+	function draw() {
+		const { sx, sy } = getScale();
+		const w = canvas.getBoundingClientRect().width;
+		const h = canvas.getBoundingClientRect().height;
+
+		ctx.clearRect(0, 0, w, h);
+		ctx.save();
+		ctx.scale(sx, sy);
+
+		const dark = document.documentElement.dataset.theme !== 'light';
+		const ballColor = dark ? '#ffffff' : '#09090b';
+		const paddleColor = dark ? '#f4f4f5' : '#18181b';
+		const dimLine = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
+		const trailBase = dark ? 'rgba(255,255,255,' : 'rgba(9,9,11,';
+
+		// Center line
+		ctx.setLineDash([5, 7]);
+		ctx.strokeStyle = dimLine;
+		ctx.lineWidth = 1.2;
+		ctx.beginPath();
+		ctx.moveTo(COURT_W / 2, 0);
+		ctx.lineTo(COURT_W / 2, COURT_H);
+		ctx.stroke();
+		ctx.setLineDash([]);
+
+		// Trail
+		for (let i = 0; i < trail.length; i++) {
+			const pt = trail[i];
+			const t = 1 - pt.age / 10;
+			ctx.fillStyle = trailBase + (t * 0.3) + ')';
+			ctx.beginPath();
+			ctx.arc(pt.x, pt.y, ballSize * (0.4 + 0.6 * t), 0, Math.PI * 2);
+			ctx.fill();
+			pt.age++;
+		}
+
+		// Ball glow
+		if (ballVel.x !== 0 || ballVel.y !== 0) {
+			const g = ctx.createRadialGradient(ball.x, ball.y, 0, ball.x, ball.y, ballSize * 5);
+			g.addColorStop(0, dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)');
+			g.addColorStop(1, 'rgba(0,0,0,0)');
+			ctx.fillStyle = g;
+			ctx.beginPath();
+			ctx.arc(ball.x, ball.y, ballSize * 5, 0, Math.PI * 2);
+			ctx.fill();
+		}
+
+		// Paddles
+		ctx.fillStyle = paddleColor;
+		ctx.beginPath();
+		ctx.roundRect(p1.x, p1.y, paddleW, paddleH, 3);
+		ctx.fill();
+		ctx.beginPath();
+		ctx.roundRect(p2.x, p2.y, paddleW, paddleH, 3);
+		ctx.fill();
+
+		// Paddle proximity glow
+		if (ballVel.x < 0 && ball.x < p1.x + paddleW + 25) {
+			const i = clamp(1 - (ball.x - p1.x) / (paddleW + 25), 0, 1);
+			const g = ctx.createRadialGradient(p1.x + paddleW / 2, p1.y + paddleH / 2, 0, p1.x + paddleW / 2, p1.y + paddleH / 2, 35);
+			g.addColorStop(0, (dark ? 'rgba(255,255,255,' : 'rgba(0,0,0,') + (i * 0.1) + ')');
+			g.addColorStop(1, 'rgba(0,0,0,0)');
+			ctx.fillStyle = g;
+			ctx.beginPath();
+			ctx.arc(p1.x + paddleW / 2, p1.y + paddleH / 2, 35, 0, Math.PI * 2);
+			ctx.fill();
+		}
+		if (ballVel.x > 0 && ball.x > p2.x - 25) {
+			const i = clamp(1 - (p2.x - ball.x) / 25, 0, 1);
+			const g = ctx.createRadialGradient(p2.x + paddleW / 2, p2.y + paddleH / 2, 0, p2.x + paddleW / 2, p2.y + paddleH / 2, 35);
+			g.addColorStop(0, (dark ? 'rgba(255,255,255,' : 'rgba(0,0,0,') + (i * 0.1) + ')');
+			g.addColorStop(1, 'rgba(0,0,0,0)');
+			ctx.fillStyle = g;
+			ctx.beginPath();
+			ctx.arc(p2.x + paddleW / 2, p2.y + paddleH / 2, 35, 0, Math.PI * 2);
+			ctx.fill();
+		}
+
+		// Ball
+		if (ballVel.x !== 0 || ballVel.y !== 0) {
+			ctx.fillStyle = ballColor;
+			ctx.beginPath();
+			ctx.arc(ball.x, ball.y, ballSize / 2, 0, Math.PI * 2);
+			ctx.fill();
+		}
+
+		// Score dots
+		const dotY = COURT_H - 14;
+		const dotGap = 10;
+		const dotR = 2.5;
+		const activeColor = dark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.3)';
+		const inactiveColor = dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+
+		for (let i = 0; i < WIN_SCORE; i++) {
+			ctx.fillStyle = i < scores.p1 ? activeColor : inactiveColor;
+			ctx.beginPath();
+			ctx.arc(COURT_W / 2 - 16 - i * dotGap, dotY, dotR, 0, Math.PI * 2);
+			ctx.fill();
+		}
+		for (let i = 0; i < WIN_SCORE; i++) {
+			ctx.fillStyle = i < scores.p2 ? activeColor : inactiveColor;
+			ctx.beginPath();
+			ctx.arc(COURT_W / 2 + 16 + i * dotGap, dotY, dotR, 0, Math.PI * 2);
+			ctx.fill();
+		}
+
+		// Overlay text
+		if (waitingToStart || gameOverText) {
+			ctx.fillStyle = dark ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.55)';
+			ctx.fillRect(0, 0, COURT_W, COURT_H);
+
+			ctx.fillStyle = ballColor;
+			ctx.textAlign = 'center';
+			ctx.textBaseline = 'middle';
+
+			if (gameOverText) {
+				ctx.font = '600 22px Inter, system-ui, sans-serif';
+				ctx.fillText(gameOverText, COURT_W / 2, COURT_H / 2 - 12);
+				ctx.font = '500 12px Inter, system-ui, sans-serif';
+				ctx.fillStyle = dark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.45)';
+				ctx.fillText('Click to play again', COURT_W / 2, COURT_H / 2 + 16);
+			} else {
+				ctx.font = '600 18px Inter, system-ui, sans-serif';
+				ctx.fillText('Pong', COURT_W / 2, COURT_H / 2 - 10);
+				ctx.font = '500 11px Inter, system-ui, sans-serif';
+				ctx.fillStyle = dark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.4)';
+				const hint = isTouchDevice ? 'Tap to start' : mode === 'computer' ? 'Arrow keys to play' : 'P1: arrows · P2: W/S';
+				ctx.fillText(hint, COURT_W / 2, COURT_H / 2 + 12);
+			}
+		}
+
+		ctx.restore();
+	}
+
+	// Loop
+	function loop() {
+		if (!gameRunning) { draw(); return; }
+		tick();
+		draw();
+		animFrame = requestAnimationFrame(loop);
+	}
+
+	function startGame() {
+		if (gameRunning) return;
+		gameRunning = true;
+		waitingToStart = false;
+		gameOverText = '';
+		initBall(Math.random() > 0.5 ? 1 : -1);
+		if (animFrame) cancelAnimationFrame(animFrame);
+		loop();
+	}
+
+	function resetGame() {
+		gameRunning = false;
+		waitingToStart = true;
+		gameOverText = '';
+		if (animFrame) cancelAnimationFrame(animFrame);
+		scores = { p1: 0, p2: 0 };
+		currentRally = 0;
+		resetPositions();
+		draw();
+	}
+
+	// Input
+	const keys: Record<string, boolean> = {};
+	const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+	document.addEventListener('keydown', (e) => {
+		keys[e.key] = true;
+		if (['ArrowUp', 'ArrowDown'].includes(e.key)) e.preventDefault();
+	});
+	document.addEventListener('keyup', (e) => { keys[e.key] = false; });
+
+	function inputPoll() {
+		if (mode === 'computer') {
+			if (keys['ArrowUp']) p1Target -= PADDLE_SPEED;
+			else if (keys['ArrowDown']) p1Target += PADDLE_SPEED;
+		} else {
+			if (keys['ArrowUp']) p1Target -= PADDLE_SPEED;
+			else if (keys['ArrowDown']) p1Target += PADDLE_SPEED;
+			if (keys['w'] || keys['W']) p2Target -= PADDLE_SPEED;
+			else if (keys['s'] || keys['S']) p2Target += PADDLE_SPEED;
+		}
+		p1Target = clamp(p1Target, paddleH / 2, COURT_H - paddleH / 2);
+		p2Target = clamp(p2Target, paddleH / 2, COURT_H - paddleH / 2);
+		requestAnimationFrame(inputPoll);
+	}
+	inputPoll();
+
+	// Touch
+	function canvasY(clientY: number) {
+		const rect = canvas.getBoundingClientRect();
+		return ((clientY - rect.top) / rect.height) * COURT_H;
+	}
+
+	function onTouch(e: TouchEvent) {
+		e.preventDefault();
+		for (let i = 0; i < e.changedTouches.length; i++) {
+			const t = e.changedTouches[i];
+			const rect = canvas.getBoundingClientRect();
+			const relX = t.clientX - rect.left;
+			const y = canvasY(t.clientY);
+
+			if (relX < rect.width / 2) {
+				p1Target = clamp(y, paddleH / 2, COURT_H - paddleH / 2);
+			} else if (mode === 'players') {
+				p2Target = clamp(y, paddleH / 2, COURT_H - paddleH / 2);
+			}
+		}
+	}
+
+	canvas.addEventListener('touchstart', onTouch, { passive: false });
+	canvas.addEventListener('touchmove', onTouch, { passive: false });
+
+	canvas.addEventListener('click', () => {
+		if (waitingToStart || gameOverText) startGame();
+	});
+
+	// Mode + difficulty
+	modeButtons.forEach((btn) => {
+		btn.addEventListener('click', () => {
+			mode = btn.dataset.mode || 'computer';
+			modeButtons.forEach((b) => b.classList.toggle('is-active', b === btn));
+			if (difficultyGroup) difficultyGroup.classList.toggle('is-hidden', mode !== 'computer');
+			resetGame();
+		});
+	});
+
+	difficultyButtons.forEach((btn) => {
+		btn.addEventListener('click', () => {
+			difficulty = btn.dataset.difficulty || 'medium';
+			difficultyButtons.forEach((b) => b.classList.toggle('is-active', b === btn));
+			if (!gameRunning) resetGame();
+		});
+	});
+
+	resetButton?.addEventListener('click', resetGame);
+
+	// Init
+	resizeCanvas();
+	resetPositions();
+	draw();
+	window.addEventListener('resize', () => { resizeCanvas(); draw(); });
+</script>
