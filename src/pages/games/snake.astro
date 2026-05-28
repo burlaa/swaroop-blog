@@ -174,8 +174,12 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
 	@media (max-width: 520px) {
 		.game-shell {
-			width: min(100% - 1rem, 680px);
-			padding-top: 2.5rem;
+			width: min(100% - 0.5rem, 680px);
+			padding-top: 1rem;
+		}
+
+		.game-topbar {
+			padding: 0.35rem 0.5rem;
 		}
 
 		.speed-switch button {
@@ -187,6 +191,10 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 		.ghost-button {
 			padding: 0.32rem 0.5rem;
 			font-size: 0.68rem;
+		}
+
+		.canvas-wrap {
+			padding: 0.3rem;
 		}
 	}
 </style>
