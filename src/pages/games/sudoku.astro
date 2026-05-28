@@ -1,0 +1,570 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+	title="Sudoku"
+	description="A minimal Sudoku puzzle game."
+>
+	<main class="game-shell">
+		<section class="game-panel fade-in" aria-label="Sudoku game">
+			<div class="game-topbar">
+				<div class="score-display">
+					<span class="score-label">Mistakes</span>
+					<strong class="score-value" data-mistakes>0</strong>
+				</div>
+				<div class="topbar-right">
+					<div class="size-switch" role="group" aria-label="Difficulty" data-diff-group>
+						<button type="button" data-diff="easy" class="is-active">Easy</button>
+						<button type="button" data-diff="medium">Med</button>
+						<button type="button" data-diff="hard">Hard</button>
+					</div>
+					<button type="button" class="ghost-button" data-reset>New</button>
+				</div>
+			</div>
+
+			<div class="canvas-wrap">
+				<canvas id="sudoku-canvas" aria-label="Sudoku board"></canvas>
+			</div>
+
+			<div class="numpad" id="numpad">
+				<button class="num-btn" data-num="1">1</button>
+				<button class="num-btn" data-num="2">2</button>
+				<button class="num-btn" data-num="3">3</button>
+				<button class="num-btn" data-num="4">4</button>
+				<button class="num-btn" data-num="5">5</button>
+				<button class="num-btn" data-num="6">6</button>
+				<button class="num-btn" data-num="7">7</button>
+				<button class="num-btn" data-num="8">8</button>
+				<button class="num-btn" data-num="9">9</button>
+				<button class="num-btn erase-btn" data-num="0">Erase</button>
+			</div>
+		</section>
+	</main>
+</BaseLayout>
+
+<style>
+	.game-shell {
+		width: min(100% - 2rem, 680px);
+		margin: 0 auto;
+		padding: 4rem 0 3rem;
+		display: flex;
+		justify-content: center;
+	}
+
+	.game-panel {
+		position: relative;
+		overflow: hidden;
+		width: 100%;
+		max-width: 440px;
+		border: 1px solid var(--border);
+		border-radius: 0.8rem;
+		background:
+			radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--text-strong) 9%, transparent), transparent 16rem),
+			color-mix(in srgb, var(--surface) 82%, transparent);
+		box-shadow:
+			0 0 0 1px color-mix(in srgb, var(--text-strong) 3%, transparent),
+			0 18px 60px rgba(0, 0, 0, 0.26);
+	}
+
+	.game-panel::before {
+		position: absolute;
+		inset: -6rem -5rem auto;
+		height: 14rem;
+		pointer-events: none;
+		background:
+			radial-gradient(circle, color-mix(in srgb, var(--text-strong) 22%, transparent), transparent 58%),
+			radial-gradient(circle at 24% 56%, rgba(143, 171, 255, 0.18), transparent 34%),
+			radial-gradient(circle at 76% 54%, rgba(255, 255, 255, 0.12), transparent 34%);
+		filter: blur(18px);
+		opacity: 0.34;
+		content: "";
+	}
+
+	.game-topbar,
+	.canvas-wrap,
+	.numpad {
+		position: relative;
+		z-index: 1;
+	}
+
+	.game-topbar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+		padding: 0.5rem 0.6rem;
+		border-bottom: 1px solid var(--border);
+	}
+
+	.score-display {
+		display: flex;
+		align-items: baseline;
+		gap: 0.4rem;
+	}
+
+	.score-label {
+		color: var(--muted-soft);
+		font-size: 0.68rem;
+		font-weight: 650;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+	}
+
+	.score-value {
+		color: var(--text-strong);
+		font-size: 1.1rem;
+		font-weight: 650;
+		line-height: 1;
+	}
+
+	.topbar-right {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+	}
+
+	.size-switch {
+		display: inline-flex;
+		padding: 0.15rem;
+		border: 1px solid var(--border);
+		border-radius: 999px;
+		background: color-mix(in srgb, var(--bg) 64%, transparent);
+	}
+
+	.size-switch button,
+	.ghost-button {
+		border: 0;
+		color: var(--muted);
+		cursor: pointer;
+		transition:
+			background-color 180ms ease,
+			color 180ms ease;
+	}
+
+	.size-switch button {
+		min-width: 2.8rem;
+		padding: 0.35rem 0.5rem;
+		border-radius: 999px;
+		background: transparent;
+		font-size: 0.68rem;
+		font-weight: 600;
+	}
+
+	.size-switch button.is-active {
+		background: var(--text-strong);
+		color: var(--bg);
+	}
+
+	.ghost-button {
+		padding: 0.38rem 0.6rem;
+		border: 1px solid var(--border);
+		border-radius: 999px;
+		background: transparent;
+		font-size: 0.72rem;
+		font-weight: 600;
+	}
+
+	.ghost-button:hover {
+		border-color: var(--border-strong);
+		color: var(--text-strong);
+	}
+
+	.canvas-wrap {
+		display: grid;
+		place-items: center;
+		padding: 0.6rem;
+	}
+
+	#sudoku-canvas {
+		width: 100%;
+		aspect-ratio: 1;
+		border-radius: 0.45rem;
+		touch-action: none;
+		cursor: pointer;
+	}
+
+	.numpad {
+		display: flex;
+		justify-content: center;
+		gap: 0.3rem;
+		padding: 0.3rem 0.6rem 0.7rem;
+		flex-wrap: wrap;
+	}
+
+	.num-btn {
+		width: clamp(30px, 8vw, 40px);
+		height: clamp(30px, 8vw, 40px);
+		display: grid;
+		place-items: center;
+		border: 1px solid var(--border);
+		border-radius: 0.4rem;
+		background: color-mix(in srgb, var(--surface) 88%, transparent);
+		color: var(--text-strong);
+		cursor: pointer;
+		font-family: inherit;
+		font-size: clamp(0.8rem, 2.5vw, 1rem);
+		font-weight: 560;
+		transition: background-color 120ms ease, transform 120ms ease;
+		-webkit-tap-highlight-color: transparent;
+	}
+
+	.num-btn:active {
+		background: color-mix(in srgb, var(--text-strong) 12%, var(--surface));
+		transform: scale(0.93);
+	}
+
+	.erase-btn {
+		font-size: clamp(0.6rem, 1.8vw, 0.72rem);
+		font-weight: 600;
+		color: var(--muted);
+	}
+
+	@media (max-width: 520px) {
+		.game-shell {
+			width: min(100% - 0.5rem, 680px);
+			padding-top: 1rem;
+		}
+
+		.game-topbar {
+			padding: 0.35rem 0.5rem;
+		}
+
+		.canvas-wrap {
+			padding: 0.3rem;
+		}
+
+		.numpad {
+			padding: 0.25rem 0.4rem 0.5rem;
+			gap: 0.2rem;
+		}
+	}
+</style>
+
+<script>
+	const canvas = document.getElementById('sudoku-canvas') as HTMLCanvasElement;
+	const ctx = canvas.getContext('2d')!;
+	const mistakesEl = document.querySelector<HTMLElement>('[data-mistakes]');
+	const resetButton = document.querySelector<HTMLButtonElement>('[data-reset]');
+	const diffButtons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-diff]'));
+
+	const DPR = window.devicePixelRatio || 1;
+
+	let difficulty = 'easy';
+	let board: number[][] = [];
+	let solution: number[][] = [];
+	let given: boolean[][] = [];
+	let selected: { r: number; c: number } | null = null;
+	let mistakes = 0;
+	let gameOver = false;
+
+	// ── Sudoku generator ──
+	function shuffle(arr: number[]) {
+		for (let i = arr.length - 1; i > 0; i--) {
+			const j = Math.floor(Math.random() * (i + 1));
+			[arr[i], arr[j]] = [arr[j], arr[i]];
+		}
+		return arr;
+	}
+
+	function isValid(board: number[][], r: number, c: number, n: number): boolean {
+		for (let i = 0; i < 9; i++) {
+			if (board[r][i] === n || board[i][c] === n) return false;
+		}
+		const br = Math.floor(r / 3) * 3;
+		const bc = Math.floor(c / 3) * 3;
+		for (let i = br; i < br + 3; i++) {
+			for (let j = bc; j < bc + 3; j++) {
+				if (board[i][j] === n) return false;
+			}
+		}
+		return true;
+	}
+
+	function solve(board: number[][]): boolean {
+		for (let r = 0; r < 9; r++) {
+			for (let c = 0; c < 9; c++) {
+				if (board[r][c] === 0) {
+					const nums = shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+					for (const n of nums) {
+						if (isValid(board, r, c, n)) {
+							board[r][c] = n;
+							if (solve(board)) return true;
+							board[r][c] = 0;
+						}
+					}
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
+	function generatePuzzle(diff: string) {
+		// Generate full solution
+		const full = Array.from({ length: 9 }, () => Array(9).fill(0));
+		solve(full);
+		solution = full.map((r) => [...r]);
+
+		// Remove cells based on difficulty
+		let removals = diff === 'easy' ? 35 : diff === 'medium' ? 45 : 55;
+		const positions = shuffle(
+			Array.from({ length: 81 }, (_, i) => [Math.floor(i / 9), i % 9])
+		);
+
+		board = full.map((r) => [...r]);
+		given = Array.from({ length: 9 }, () => Array(9).fill(true));
+
+		for (const [r, c] of positions) {
+			if (removals <= 0) break;
+			if (board[r][c] !== 0) {
+				board[r][c] = 0;
+				given[r][c] = false;
+				removals--;
+			}
+		}
+	}
+
+	// ── Canvas ──
+	function resizeCanvas() {
+		const rect = canvas.getBoundingClientRect();
+		canvas.width = rect.width * DPR;
+		canvas.height = rect.height * DPR;
+		ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+	}
+
+	function cellPx() {
+		const rect = canvas.getBoundingClientRect();
+		return rect.width / 9;
+	}
+
+	function cellPos(r: number, c: number) {
+		const cs = cellPx();
+		return { x: c * cs, y: r * cs, w: cs, h: cs };
+	}
+
+	function draw() {
+		const rect = canvas.getBoundingClientRect();
+		const w = rect.width;
+		const h = rect.height;
+		ctx.clearRect(0, 0, w, h);
+
+		const dark = document.documentElement.dataset.theme !== 'light';
+		const cs = cellPx();
+
+		const gridColor = dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+		const thickColor = dark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)';
+		const selectedBg = dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)';
+		const highlightBg = dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.025)';
+		const givenColor = dark ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.8)';
+		const enteredColor = dark ? '#6b9fff' : '#3b7dd8';
+		const errorColor = '#e06060';
+
+		// Background
+		ctx.fillStyle = dark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)';
+		ctx.fillRect(0, 0, w, h);
+
+		// Highlight same number
+		let highlightNum = 0;
+		if (selected && board[selected.r][selected.c] !== 0) {
+			highlightNum = board[selected.r][selected.c];
+		}
+
+		// Cells
+		for (let r = 0; r < 9; r++) {
+			for (let c = 0; c < 9; c++) {
+				const { x, y } = cellPos(r, c);
+
+				// Selected cell
+				if (selected && selected.r === r && selected.c === c) {
+					ctx.fillStyle = selectedBg;
+					ctx.fillRect(x, y, cs, cs);
+				} else if (highlightNum && board[r][c] === highlightNum) {
+					ctx.fillStyle = highlightBg;
+					ctx.fillRect(x, y, cs, cs);
+				}
+			}
+		}
+
+		// Grid lines
+		for (let i = 0; i <= 9; i++) {
+			const isThick = i % 3 === 0;
+			ctx.strokeStyle = isThick ? thickColor : gridColor;
+			ctx.lineWidth = isThick ? 1.5 : 0.8;
+
+			ctx.beginPath();
+			ctx.moveTo(i * cs, 0);
+			ctx.lineTo(i * cs, h);
+			ctx.stroke();
+
+			ctx.beginPath();
+			ctx.moveTo(0, i * cs);
+			ctx.lineTo(w, i * cs);
+			ctx.stroke();
+		}
+
+		// Numbers
+		const fontSize = cs * 0.52;
+		ctx.textAlign = 'center';
+		ctx.textBaseline = 'middle';
+
+		for (let r = 0; r < 9; r++) {
+			for (let c = 0; c < 9; c++) {
+				const val = board[r][c];
+				if (val === 0) continue;
+
+				const { x, y } = cellPos(r, c);
+				const cx = x + cs / 2;
+				const cy = y + cs / 2;
+
+				ctx.font = `560 ${fontSize}px Inter, system-ui, sans-serif`;
+
+				if (given[r][c]) {
+					ctx.fillStyle = givenColor;
+				} else {
+					// Check if wrong
+					const isWrong = val !== solution[r][c];
+					ctx.fillStyle = isWrong ? errorColor : enteredColor;
+				}
+
+				ctx.fillText(String(val), cx, cy + 1);
+			}
+		}
+
+		// Game over overlay
+		if (gameOver) {
+			ctx.fillStyle = dark ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)';
+			ctx.fillRect(0, 0, w, h);
+
+			ctx.fillStyle = dark ? '#fff' : '#09090b';
+			ctx.textAlign = 'center';
+			ctx.textBaseline = 'middle';
+			ctx.font = '600 20px Inter, system-ui, sans-serif';
+			ctx.fillText('Complete!', w / 2, h / 2 - 8);
+			ctx.font = '400 11px Inter, system-ui, sans-serif';
+			ctx.fillStyle = dark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)';
+			ctx.fillText('Tap to play again', w / 2, h / 2 + 12);
+		}
+	}
+
+	// ── Input ──
+	function getCell(e: MouseEvent | TouchEvent) {
+		const rect = canvas.getBoundingClientRect();
+		let clientX: number, clientY: number;
+
+		if (e instanceof TouchEvent) {
+			const t = e.touches[0] || e.changedTouches[0];
+			clientX = t.clientX;
+			clientY = t.clientY;
+		} else {
+			clientX = e.clientX;
+			clientY = e.clientY;
+		}
+
+		const mx = clientX - rect.left;
+		const my = clientY - rect.top;
+		const cs = cellPx();
+		const c = Math.floor(mx / cs);
+		const r = Math.floor(my / cs);
+
+		if (r >= 0 && r < 9 && c >= 0 && c < 9) return { r, c };
+		return null;
+	}
+
+	function placeNumber(num: number) {
+		if (!selected || gameOver) return;
+		if (given[selected.r][selected.c]) return;
+
+		if (num === 0) {
+			board[selected.r][selected.c] = 0;
+			draw();
+			return;
+		}
+
+		if (num === solution[selected.r][selected.c]) {
+			board[selected.r][selected.c] = num;
+		} else {
+			mistakes++;
+			if (mistakesEl) mistakesEl.textContent = String(mistakes);
+			board[selected.r][selected.c] = num;
+		}
+
+		// Check win
+		let complete = true;
+		for (let r = 0; r < 9; r++) {
+			for (let c = 0; c < 9; c++) {
+				if (board[r][c] !== solution[r][c]) complete = false;
+			}
+		}
+
+		if (complete) {
+			gameOver = true;
+		}
+
+		draw();
+	}
+
+	canvas.addEventListener('click', (e) => {
+		if (gameOver) { initGame(); return; }
+		const cell = getCell(e);
+		if (cell) {
+			selected = cell;
+			draw();
+		}
+	});
+
+	canvas.addEventListener('touchend', (e) => {
+		e.preventDefault();
+		if (gameOver) { initGame(); return; }
+		const cell = getCell(e);
+		if (cell) {
+			selected = cell;
+			draw();
+		}
+	}, { passive: false });
+
+	// Numpad
+	document.getElementById('numpad')?.addEventListener('click', (e) => {
+		const btn = (e.target as HTMLElement).closest('[data-num]');
+		if (!btn) return;
+		const num = parseInt((btn as HTMLButtonElement).dataset.num || '0');
+		placeNumber(num);
+	});
+
+	// Keyboard
+	document.addEventListener('keydown', (e) => {
+		const n = parseInt(e.key);
+		if (n >= 1 && n <= 9) { placeNumber(n); return; }
+		if (e.key === 'Backspace' || e.key === 'Delete') { placeNumber(0); return; }
+		if (!selected) return;
+		if (e.key === 'ArrowUp' && selected.r > 0) { selected.r--; draw(); }
+		if (e.key === 'ArrowDown' && selected.r < 8) { selected.r++; draw(); }
+		if (e.key === 'ArrowLeft' && selected.c > 0) { selected.c--; draw(); }
+		if (e.key === 'ArrowRight' && selected.c < 8) { selected.c++; draw(); }
+	});
+
+	// Difficulty
+	diffButtons.forEach((btn) => {
+		btn.addEventListener('click', () => {
+			difficulty = btn.dataset.diff || 'easy';
+			diffButtons.forEach((b) => b.classList.toggle('is-active', b === btn));
+			initGame();
+		});
+	});
+
+	resetButton?.addEventListener('click', initGame);
+
+	function initGame() {
+		generatePuzzle(difficulty);
+		selected = null;
+		mistakes = 0;
+		gameOver = false;
+		if (mistakesEl) mistakesEl.textContent = '0';
+		draw();
+	}
+
+	// Init
+	resizeCanvas();
+	initGame();
+	window.addEventListener('resize', () => { resizeCanvas(); draw(); });
+</script>
