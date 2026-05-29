@@ -1,0 +1,275 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+	title="Bookshelf"
+	description="Books that shaped my thinking."
+>
+	<main class="shelf-shell">
+		<section class="shelf-hero fade-in">
+			<p class="eyebrow">Bookshelf</p>
+			<h1>Books that shaped my thinking.</h1>
+		</section>
+
+		<div class="shelf-wrap fade-in" style="--delay: 100ms">
+			<canvas id="shelf-canvas"></canvas>
+		</div>
+	</main>
+</BaseLayout>
+
+<style>
+	.shelf-shell {
+		width: min(100% - 2rem, 800px);
+		margin: 0 auto;
+		padding: 5rem 0 5rem;
+	}
+
+	.shelf-hero {
+		max-width: 560px;
+		margin-bottom: 3rem;
+	}
+
+	.shelf-hero h1 {
+		margin: 0;
+		color: var(--text-strong);
+		font-size: clamp(2rem, 5vw, 3.2rem);
+		font-weight: 650;
+		line-height: 1.03;
+	}
+
+	.shelf-wrap {
+		margin-bottom: 3rem;
+		border-radius: 0.8rem;
+		overflow: hidden;
+		border: 1px solid var(--border);
+	}
+
+	#shelf-canvas {
+		width: 100%;
+		display: block;
+	}
+</style>
+
+<script>
+	const canvas = document.getElementById('shelf-canvas') as HTMLCanvasElement;
+	const ctx = canvas.getContext('2d')!;
+	const DPR = window.devicePixelRatio || 1;
+
+	const books = [
+		{ title: 'Thinking, Fast and Slow', author: 'Daniel Kahneman', color: '#2a2a2e', spine: '#3a3a40', pages: 499 },
+		{ title: 'Sapiens', author: 'Yuval Noah Harari', color: '#1e2a1e', spine: '#2e3e2e', pages: 443 },
+		{ title: 'The Art of Thinking Clearly', author: 'Rolf Dobelli', color: '#2a2028', spine: '#3a3038', pages: 304 },
+		{ title: 'Atomic Habits', author: 'James Clear', color: '#1a2030', spine: '#2a3040', pages: 320 },
+		{ title: 'Deep Work', author: 'Cal Newport', color: '#28201a', spine: '#38302a', pages: 296 },
+		{ title: 'The Innovators', author: 'Walter Isaacson', color: '#20202a', spine: '#30303a', pages: 560 },
+		{ title: 'Zero to One', author: 'Peter Thiel', color: '#1a1a22', spine: '#2a2a32', pages: 224 },
+		{ title: 'The Lean Startup', author: 'Eric Ries', color: '#221e1a', spine: '#322e2a', pages: 336 },
+		{ title: 'Outliers', author: 'Malcolm Gladwell', color: '#1e2228', spine: '#2e3238', pages: 336 },
+		{ title: 'The Beginning of Infinity', author: 'David Deutsch', color: '#241e22', spine: '#342e32', pages: 496 },
+		{ title: 'Antifragile', author: 'Nassim Taleb', color: '#2a241e', spine: '#3a342e', pages: 519 },
+		{ title: 'The Pragmatic Programmer', author: 'Hunt & Thomas', color: '#1a2220', spine: '#2a3230', pages: 352 },
+		{ title: 'Rework', author: 'Jason Fried', color: '#2e2020', spine: '#3e3030', pages: 288 },
+		{ title: 'The Hard Thing About Hard Things', author: 'Ben Horowitz', color: '#201a20', spine: '#302a30', pages: 304 },
+		{ title: 'Show Your Work', author: 'Austin Kleon', color: '#1e2428', spine: '#2e3438', pages: 224 },
+		{ title: 'Steal Like an Artist', author: 'Austin Kleon', color: '#282218', spine: '#383228', pages: 160 },
+		{ title: 'The Obstacle Is the Way', author: 'Ryan Holiday', color: '#222018', spine: '#323028', pages: 224 },
+		{ title: 'Essentialism', author: 'Greg McKeown', color: '#1a1e24', spine: '#2a2e34', pages: 272 },
+		{ title: 'The Psychology of Money', author: 'Morgan Housel', color: '#242018', spine: '#343028', pages: 256 },
+		{ title: 'Range', author: 'David Epstein', color: '#1e1a22', spine: '#2e2a32', pages: 352 },
+	];
+
+	// Render book list below canvas
+	const listEl = document.getElementById('bookList')!;
+	listEl.innerHTML = books.map(b => `
+		<div class="book-entry">
+			<h3>${b.title}</h3>
+			<span class="book-author">${b.author}</span>
+		</div>
+	`).join('');
+
+	// ── Canvas drawing ──
+	let W = 0, H = 0;
+	const SHELF_HEIGHT = 10;
+	const SHELF_GAP = 200;
+	const BOOK_PAD = 3;
+	const TOP_PAD = 15;
+
+	function resize() {
+		const rect = canvas.getBoundingClientRect();
+		W = rect.width;
+		H = SHELF_GAP + SHELF_HEIGHT + TOP_PAD + 10;
+		canvas.width = W * DPR;
+		canvas.height = H * DPR;
+		canvas.style.height = H + 'px';
+		ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+	}
+
+	function drawShelf(y: number) {
+		// Shelf board shadow
+		const shadowGrad = ctx.createLinearGradient(0, y - 8, 0, y);
+		shadowGrad.addColorStop(0, 'rgba(0,0,0,0)');
+		shadowGrad.addColorStop(1, 'rgba(0,0,0,0.15)');
+		ctx.fillStyle = shadowGrad;
+		ctx.fillRect(0, y - 8, w(), 8);
+
+		// Shelf board
+		const isDark = document.documentElement.dataset.theme !== 'light';
+
+		// Wood grain effect
+		const boardGrad = ctx.createLinearGradient(0, y, 0, y + SHELF_HEIGHT);
+		if (isDark) {
+			boardGrad.addColorStop(0, '#2a2520');
+			boardGrad.addColorStop(0.3, '#242018');
+			boardGrad.addColorStop(0.7, '#1e1a14');
+			boardGrad.addColorStop(1, '#181410');
+		} else {
+			boardGrad.addColorStop(0, '#d4c8b8');
+			boardGrad.addColorStop(0.3, '#c8bca8');
+			boardGrad.addColorStop(0.7, '#bfb3a0');
+			boardGrad.addColorStop(1, '#b0a490');
+		}
+		ctx.fillStyle = boardGrad;
+		ctx.fillRect(0, y, w(), SHELF_HEIGHT);
+
+		// Top edge highlight
+		ctx.fillStyle = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.3)';
+		ctx.fillRect(0, y, w(), 1);
+
+		// Grain lines
+		ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.03)';
+		ctx.lineWidth = 0.5;
+		for (let i = 0; i < 4; i++) {
+			const gy = y + 2 + i * 2.5;
+			ctx.beginPath();
+			ctx.moveTo(0, gy);
+			for (let x = 0; x < w(); x += 20) {
+				ctx.lineTo(x, gy + Math.sin(x * 0.02 + i) * 0.5);
+			}
+			ctx.stroke();
+		}
+	}
+
+	function drawBook(x: number, shelfY: number, book: typeof books[0], index: number) {
+		const isDark = document.documentElement.dataset.theme !== 'light';
+		const maxH = SHELF_GAP - 8;
+		const variance = (Math.sin(index * 2.7) * 0.5 + 0.5) * 18;
+		const bh = maxH - variance;
+		const bw = 22 + (book.pages / 500) * 14;
+		const by = shelfY - bh;
+
+		// Book shadow on shelf
+		ctx.fillStyle = 'rgba(0,0,0,0.25)';
+		ctx.fillRect(x + 2, by + 3, bw, bh);
+
+		// Book body
+		const bodyGrad = ctx.createLinearGradient(x, 0, x + bw, 0);
+		bodyGrad.addColorStop(0, book.spine);
+		bodyGrad.addColorStop(0.5, book.color);
+		bodyGrad.addColorStop(1, book.spine);
+		ctx.fillStyle = bodyGrad;
+		ctx.fillRect(x, by, bw, bh);
+
+		// Spine edge (left)
+		ctx.fillStyle = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.25)';
+		ctx.fillRect(x, by, 2, bh);
+
+		// Spine edge (right)
+		ctx.fillStyle = 'rgba(0,0,0,0.2)';
+		ctx.fillRect(x + bw - 2, by, 2, bh);
+
+		// Top edge
+		ctx.fillStyle = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.2)';
+		ctx.fillRect(x, by, bw, 1.5);
+
+		// Bottom edge
+		ctx.fillStyle = 'rgba(0,0,0,0.12)';
+		ctx.fillRect(x, by + bh - 1, bw, 1);
+
+		// Decorative line near top
+		ctx.fillStyle = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.05)';
+		ctx.fillRect(x + 3, by + 8, bw - 6, 0.8);
+
+		// Title on spine (vertical)
+		const titleFontSize = Math.min(11, bw * 0.45);
+		ctx.font = `500 ${titleFontSize}px Inter, system-ui, sans-serif`;
+		const titleW = ctx.measureText(book.title).width;
+		const availH = bh - 20;
+		const canFitTitle = titleW <= availH;
+		const titleText = canFitTitle ? book.title : book.title.slice(0, Math.floor(book.title.length * (availH / titleW))) + '…';
+
+		ctx.save();
+		ctx.translate(x + bw / 2, by + bh * 0.42);
+		ctx.rotate(-Math.PI / 2);
+		ctx.fillStyle = isDark ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.7)';
+		ctx.textAlign = 'center';
+		ctx.textBaseline = 'middle';
+		ctx.fillText(titleText, 0, 0);
+		ctx.restore();
+
+		// Author below title
+		const authFontSize = Math.min(7.5, bw * 0.3);
+		ctx.font = `300 ${authFontSize}px Inter, system-ui, sans-serif`;
+		const authW = ctx.measureText(book.author).width;
+		const authAvail = bh - 20;
+		const authText = authW <= authAvail ? book.author : book.author.slice(0, Math.floor(book.author.length * (authAvail / authW))) + '…';
+
+		ctx.save();
+		ctx.translate(x + bw / 2, by + bh * 0.78);
+		ctx.rotate(-Math.PI / 2);
+		ctx.fillStyle = isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.35)';
+		ctx.textAlign = 'center';
+		ctx.textBaseline = 'middle';
+		ctx.fillText(authText, 0, 0);
+		ctx.restore();
+
+		return bw;
+	}
+
+	function w() { return W; }
+
+	function draw() {
+		const isDark = document.documentElement.dataset.theme !== 'light';
+		ctx.clearRect(0, 0, W, H);
+
+		// Background
+		ctx.fillStyle = isDark ? '#0d0d0e' : '#f5f5f5';
+		ctx.fillRect(0, 0, W, H);
+
+		const shelfY = TOP_PAD + SHELF_GAP;
+
+		// Calculate total width needed
+		let totalW = 0;
+		for (const b of books) {
+			totalW += 22 + (b.pages / 500) * 14 + BOOK_PAD;
+		}
+
+		// Scale to fit shelf width
+		const scale = Math.min(1, (W - 20) / totalW);
+		let x = (W - totalW * scale) / 2;
+
+		for (let i = 0; i < books.length; i++) {
+			const bw = 22 + (books[i].pages / 500) * 14;
+			const scaledW = bw * scale;
+
+			ctx.save();
+			ctx.translate(x, 0);
+			ctx.scale(scale, 1);
+			drawBook(0, shelfY, books[i], i);
+			ctx.restore();
+
+			x += scaledW + BOOK_PAD * scale;
+		}
+
+		drawShelf(shelfY);
+	}
+
+	resize();
+	draw();
+
+	window.addEventListener('resize', () => { resize(); draw(); });
+
+	// Redraw on theme change
+	const observer = new MutationObserver(() => { resize(); draw(); });
+	observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+</script>

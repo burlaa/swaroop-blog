@@ -1,0 +1,150 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const bookmarks = [
+	{
+		date: new Date('2026-05-27'),
+		title: 'Why aren\'t things changing faster?',
+		description: 'On the surprisingly slow pace of technological adoption despite rapid innovation.',
+		url: 'https://invertedpassion.com/why-arent-things-changing-faster/',
+	},
+	{
+		date: new Date('2026-05-20'),
+		title: 'Linear — Plan and build products',
+		description: 'Issue tracking that feels like it was designed, not built.',
+		url: 'https://linear.app',
+	},
+	{
+		date: new Date('2026-05-14'),
+		title: 'Dan Luu\'s Blog',
+		description: 'Deep dives into systems, culture, and engineering.',
+		url: 'https://danluu.com',
+	},
+	{
+		date: new Date('2026-05-08'),
+		title: 'Tailwind CSS',
+		description: 'Utility-first CSS framework. Changed how I think about styling.',
+		url: 'https://tailwindcss.com',
+	},
+	{
+		date: new Date('2026-04-29'),
+		title: 'Arc Browser',
+		description: 'A browser that thinks about tabs differently.',
+		url: 'https://arc.net',
+	},
+	{
+		date: new Date('2026-04-18'),
+		title: 'Paul Graham — Essays',
+		description: 'Timeless writing on startups, thinking, and doing great work.',
+		url: 'https://paulgraham.com',
+	},
+	{
+		date: new Date('2026-04-10'),
+		title: 'Obsidian',
+		description: 'Markdown notes with backlinks. My second brain.',
+		url: 'https://obsidian.md',
+	},
+	{
+		date: new Date('2026-03-28'),
+		title: 'Raycast',
+		description: 'Productivity launcher that replaced Spotlight.',
+		url: 'https://raycast.com',
+	},
+	{
+		date: new Date('2026-03-15'),
+		title: 'Mobbin — UI Design Inspiration',
+		description: 'Real-world UI patterns from top apps.',
+		url: 'https://mobbin.com',
+	},
+	{
+		date: new Date('2026-03-02'),
+		title: 'Vercel',
+		description: 'Deploy instantly. The best hosting for frontend projects.',
+		url: 'https://vercel.com',
+	},
+];
+---
+
+<BaseLayout
+	title="Bookmarks"
+	description="Links I find interesting."
+>
+	<main class="home-shell">
+		<section class="intro fade-in">
+			<p class="eyebrow">Bookmarks</p>
+			<h1>Things worth saving.</h1>
+			<p>Links, essays, and tools I keep coming back to.</p>
+		</section>
+
+		<section class="timeline" aria-label="Bookmarks">
+			{bookmarks.map((bm, index) => {
+				const year = bm.date.toLocaleDateString('en', { year: 'numeric' });
+				const day = bm.date.toLocaleDateString('en', { month: 'short', day: 'numeric' });
+				return (
+					<article class="timeline-post fade-in" style={`--delay: ${index * 80}ms`}>
+						<div class="timeline-post__date" aria-label={bm.date.toDateString()}>
+							<span>{year}</span>
+							<time datetime={bm.date.toISOString()}>{day}</time>
+						</div>
+						<div class="timeline-post__rail" aria-hidden="true">
+							<span></span>
+						</div>
+						<a class="timeline-post__content" href={bm.url} target="_blank" rel="noopener">
+							<h2>{bm.title}</h2>
+							<p>{bm.description}</p>
+							<span class="bm-url">{new URL(bm.url).hostname}</span>
+						</a>
+					</article>
+				);
+			})}
+		</section>
+	</main>
+</BaseLayout>
+
+<style>
+	.home-shell {
+		padding-top: 4rem;
+	}
+
+	.intro h1 {
+		font-size: clamp(1.8rem, 4.5vw, 3rem);
+	}
+
+	.intro p:not(.eyebrow) {
+		font-size: clamp(0.9rem, 1.3vw, 1rem);
+	}
+
+	.timeline-post {
+		min-height: 7.5rem;
+	}
+
+	.timeline-post__date {
+		font-size: 0.72rem;
+		padding-top: 0.8rem;
+	}
+
+	.timeline-post__content {
+		padding: 0.7rem 0 2rem 1.2rem;
+	}
+
+	.timeline-post__content h2 {
+		font-size: clamp(1.2rem, 2.2vw, 1.7rem);
+	}
+
+	.timeline-post__content p {
+		font-size: 0.92rem;
+		max-width: 520px;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.bm-url {
+		display: inline-block;
+		margin-top: 0.4rem;
+		color: var(--muted-soft);
+		font-size: 0.7rem;
+		font-weight: 400;
+		letter-spacing: 0.02em;
+	}
+</style>
