@@ -48,11 +48,13 @@ The survivorship bias is brutal and he names it: passionate people who _failed_ 
 
 ## Goals Are for Losers, Systems Are for Winners
 
-The plane ride that changed Adams' life happened before Dilbert existed. He was twenty-one, flying to California for the first time, wearing his one and only suit because he'd never flown before and assumed everyone dressed formally on planes. He sat next to a CEO who told him something that rearranged his thinking permanently: **never fall in love with where you are — fall in love with where you're going.**
+The plane ride that changed Adams' life happened before Dilbert existed. He was twenty-one, flying to California for the first time, wearing his one and only suit because he'd never flown before and assumed everyone dressed formally on planes. He sat next to a CEO who told him something that rearranged his thinking permanently:
 
-> _(The original line was job-specific — rephrased here to capture the broader idea.)_
+> **"Never fall in love with where you are — fall in love with where you're going."**
 
-Every time the man got a new opportunity, he immediately started looking for the next one. Not out of disloyalty — because the best opportunity rarely shows up exactly when you've decided you're ready for it. That's the difference between a system and a goal.
+<span style="font-size: 0.82rem; color: var(--muted-soft);">_(The original line was job-specific — rephrased here to capture the broader idea.)_</span>
+
+He didn't cling to any single chapter. He kept turning pages — because the best position rarely shows up exactly when you've decided you're ready for it. That's the difference between a system and a goal.
 
 |**Goal**|**System**|
 |---|---|
