@@ -39,9 +39,11 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 	.game-shell {
 		width: min(100% - 2rem, 680px);
 		margin: 0 auto;
-		padding: 4rem 0 3rem;
+		padding: 4rem 0 4rem;
 		display: flex;
 		justify-content: center;
+		align-items: center;
+		min-height: calc(100vh - 8rem);
 	}
 
 	.game-panel {
@@ -194,7 +196,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 	@media (max-width: 520px) {
 		.game-shell {
 			width: min(100% - 0.5rem, 680px);
-			padding-top: 1rem;
+			padding: 1.5rem 0;
+			min-height: auto;
 		}
 
 		.game-topbar {

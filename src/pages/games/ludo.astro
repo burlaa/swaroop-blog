@@ -1,0 +1,792 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+	title="Ludo"
+	description="A classic Ludo board game for two players."
+>
+	<main class="game-shell">
+		<section class="game-panel fade-in" aria-label="Ludo game">
+			<div class="game-topbar">
+				<div class="player-info">
+					<div class="player-tag active" data-player="red">
+						<span class="player-dot" style="background: #ef4444"></span>
+						<span class="player-label">Red</span>
+					</div>
+					<div class="player-tag" data-player="yellow">
+						<span class="player-dot" style="background: #eab308"></span>
+						<span class="player-label">Yellow</span>
+					</div>
+				</div>
+				<div class="topbar-right">
+					<button type="button" class="ghost-button" data-reset>Reset</button>
+				</div>
+			</div>
+
+			<div class="canvas-wrap">
+				<canvas id="ludo-canvas" aria-label="Ludo game board"></canvas>
+			</div>
+
+			<div class="game-bottom">
+				<div class="dice-area" data-dice-area>
+					<div class="dice" data-dice>?</div>
+					<p class="dice-hint">Tap to roll</p>
+				</div>
+				<div class="message" data-message>Red's turn — tap dice</div>
+			</div>
+		</section>
+	</main>
+</BaseLayout>
+
+<style>
+	.game-shell {
+		width: min(100% - 2rem, 680px);
+		margin: 0 auto;
+		padding: 4rem 0 4rem;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		min-height: calc(100vh - 8rem);
+	}
+
+	.game-panel {
+		position: relative;
+		overflow: hidden;
+		width: 100%;
+		max-width: 440px;
+		border: 1px solid var(--border);
+		border-radius: 0.8rem;
+		background:
+			radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--text-strong) 9%, transparent), transparent 16rem),
+			color-mix(in srgb, var(--surface) 82%, transparent);
+		box-shadow:
+			0 0 0 1px color-mix(in srgb, var(--text-strong) 3%, transparent),
+			0 18px 60px rgba(0, 0, 0, 0.26);
+	}
+
+	.game-panel::before {
+		position: absolute;
+		inset: -6rem -5rem auto;
+		height: 14rem;
+		pointer-events: none;
+		background:
+			radial-gradient(circle, color-mix(in srgb, var(--text-strong) 22%, transparent), transparent 58%),
+			radial-gradient(circle at 24% 56%, rgba(143, 171, 255, 0.18), transparent 34%),
+			radial-gradient(circle at 76% 54%, rgba(255, 255, 255, 0.12), transparent 34%);
+		filter: blur(18px);
+		opacity: 0.34;
+		content: "";
+	}
+
+	.game-topbar,
+	.canvas-wrap,
+	.game-bottom {
+		position: relative;
+		z-index: 1;
+	}
+
+	.game-topbar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+		padding: 0.5rem 0.6rem;
+		border-bottom: 1px solid var(--border);
+	}
+
+	.player-info {
+		display: flex;
+		gap: 0.75rem;
+	}
+
+	.player-tag {
+		display: flex;
+		align-items: center;
+		gap: 0.35rem;
+		padding: 0.3rem 0.6rem;
+		border-radius: 999px;
+		border: 1px solid transparent;
+		opacity: 0.5;
+		transition: opacity 200ms ease, border-color 200ms ease;
+	}
+
+	.player-tag.active {
+		opacity: 1;
+		border-color: var(--border-strong);
+		background: color-mix(in srgb, var(--surface) 82%, transparent);
+	}
+
+	.player-dot {
+		width: 0.5rem;
+		height: 0.5rem;
+		border-radius: 999px;
+	}
+
+	.player-label {
+		font-size: 0.72rem;
+		font-weight: 600;
+		color: var(--text-strong);
+	}
+
+	.ghost-button {
+		border: 0;
+		color: var(--muted);
+		cursor: pointer;
+		padding: 0.38rem 0.6rem;
+		border: 1px solid var(--border);
+		border-radius: 999px;
+		background: transparent;
+		font-size: 0.72rem;
+		font-weight: 600;
+		transition: background-color 180ms ease, color 180ms ease, transform 180ms ease;
+	}
+
+	.ghost-button:hover {
+		border-color: var(--border-strong);
+		color: var(--text-strong);
+		transform: translateY(-1px);
+	}
+
+	.canvas-wrap {
+		display: grid;
+		place-items: center;
+		padding: 0.6rem;
+	}
+
+	#ludo-canvas {
+		width: 100%;
+		aspect-ratio: 1;
+		border-radius: 0.45rem;
+		touch-action: none;
+		cursor: pointer;
+	}
+
+	.game-bottom {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 0.5rem 0.75rem 0.75rem;
+		border-top: 1px solid var(--border);
+	}
+
+	.dice-area {
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
+		cursor: pointer;
+	}
+
+	.dice {
+		width: 2.5rem;
+		height: 2.5rem;
+		display: grid;
+		place-items: center;
+		border: 1px solid var(--border);
+		border-radius: 0.4rem;
+		background: color-mix(in srgb, var(--bg) 64%, transparent);
+		color: var(--text-strong);
+		font-size: 1.4rem;
+		font-weight: 700;
+		user-select: none;
+		transition: transform 150ms ease;
+	}
+
+	.dice:active {
+		transform: scale(0.92);
+	}
+
+	.dice-hint {
+		margin: 0;
+		color: var(--muted-soft);
+		font-size: 0.72rem;
+	}
+
+	.message {
+		color: var(--muted);
+		font-size: 0.78rem;
+		font-weight: 500;
+		text-align: right;
+	}
+
+	@media (max-width: 520px) {
+		.game-shell {
+			width: min(100% - 0.5rem, 680px);
+			padding: 1.5rem 0;
+			min-height: auto;
+		}
+
+		.game-topbar {
+			padding: 0.35rem 0.5rem;
+		}
+
+		.canvas-wrap {
+			padding: 0.3rem;
+		}
+
+		.game-bottom {
+			padding: 0.4rem 0.5rem 0.6rem;
+		}
+
+		.dice {
+			width: 2.2rem;
+			height: 2.2rem;
+			font-size: 1.2rem;
+		}
+	}
+</style>
+
+<script>
+	const canvas = document.getElementById('ludo-canvas') as HTMLCanvasElement;
+	const ctx = canvas.getContext('2d')!;
+	const diceEl = document.querySelector<HTMLElement>('[data-dice]');
+	const diceArea = document.querySelector<HTMLElement>('[data-dice-area]');
+	const messageEl = document.querySelector<HTMLElement>('[data-message]');
+	const resetBtn = document.querySelector<HTMLButtonElement>('[data-reset]');
+	const playerTags = Array.from(document.querySelectorAll<HTMLElement>('[data-player]'));
+
+	const DPR = window.devicePixelRatio || 1;
+
+	type Player = 'red' | 'yellow';
+	type TokenState = 'base' | 'track' | 'home';
+
+	interface Token {
+		state: TokenState;
+		pos: number;
+	}
+
+	interface GameState {
+		turn: Player;
+		dice: number;
+		rolled: boolean;
+		canRoll: boolean;
+		tokens: Record<Player, Token[]>;
+		waitingForToken: boolean;
+		gameOver: boolean;
+		winner: Player | null;
+	}
+
+	const state: GameState = {
+		turn: 'red',
+		dice: 0,
+		rolled: false,
+		canRoll: true,
+		tokens: {
+			red: [{ state: 'base', pos: 0 }, { state: 'base', pos: 0 }, { state: 'base', pos: 0 }, { state: 'base', pos: 0 }],
+			yellow: [{ state: 'base', pos: 0 }, { state: 'base', pos: 0 }, { state: 'base', pos: 0 }, { state: 'base', pos: 0 }],
+		},
+		waitingForToken: false,
+		gameOver: false,
+		winner: null,
+	};
+
+	// 15x15 board. 52-cell track going clockwise.
+	// Red's tokens enter at index 0, Yellow's at index 26.
+	// After 50 steps on the track, tokens enter the home column (5 cells) then home.
+	const TRACK: [number, number][] = [
+		[6,1],[6,2],[6,3],[6,4],[6,5],        // 0-4
+		[5,6],[4,6],[3,6],[2,6],[1,6],[0,6],  // 5-10
+		[0,7],[0,8],                           // 11-12
+		[1,8],[2,8],[3,8],[4,8],[5,8],        // 13-17
+		[6,9],[6,10],[6,11],[6,12],[6,13],    // 18-22
+		[7,13],[8,13],                         // 23-24
+		[8,12],[8,11],[8,10],[8,9],[8,8],     // 25-29
+		[9,8],[10,8],[11,8],[12,8],[13,8],    // 30-34
+		[13,7],[13,6],                         // 35-36
+		[13,5],[13,4],[13,3],[13,2],[13,1],   // 37-41
+		[12,1],[11,1],                         // 42-43
+		[11,2],[11,3],[11,4],[11,5],[11,6],   // 44-48
+		[10,6],[9,6],[8,6],                    // 49-51
+	];
+
+	// Player start offsets on the track
+	const PLAYER_START: Record<Player, number> = {
+		red: 0,
+		yellow: 26,
+	};
+
+	// Home column: 5 cells leading to the center home
+	// Red's home column: col 7, rows 1-6 (going down)
+	// Yellow's home column: col 7, rows 13-8 (going up)
+	const HOME_COL: Record<Player, [number, number][]> = {
+		red:    [[1,7],[2,7],[3,7],[4,7],[5,7]],
+		yellow: [[13,7],[12,7],[11,7],[10,7],[9,7]],
+	};
+
+	// Home (final destination — the center)
+	const HOME_CENTER: [number, number] = [7, 7];
+
+	// Token base positions (2x2 grid in each corner)
+	const BASE_POS: Record<Player, [number, number][]> = {
+		red:    [[2,2],[2,3],[3,2],[3,3]],
+		yellow: [[11,12],[11,13],[12,12],[12,13]],
+	};
+
+	// Safe squares on the track (no capture)
+	// Standard: 0, 8, 13, 21, 26, 34, 39, 47
+	const SAFE = [0, 8, 13, 21, 26, 34, 39, 47];
+
+	// Colors
+	const COLORS = {
+		red: '#ef4444',
+		redLight: '#fca5a5',
+		yellow: '#eab308',
+		yellowLight: '#fde047',
+	};
+
+	let cellSize = 0;
+
+	function resizeCanvas() {
+		const rect = canvas.getBoundingClientRect();
+		canvas.width = rect.width * DPR;
+		canvas.height = rect.height * DPR;
+		ctx.setTransform(1, 0, 0, 1, 0, 0);
+		ctx.scale(DPR, DPR);
+		cellSize = rect.width / 15;
+	}
+
+	function tokenScreenPos(player: Player, idx: number): [number, number] | null {
+		const t = state.tokens[player][idx];
+		if (t.state === 'base') return BASE_POS[player][idx];
+		if (t.state === 'home') return HOME_CENTER;
+
+		// On track
+		const trackIdx = (PLAYER_START[player] + t.pos) % 52;
+
+		// Check if token is in home column
+		// Token enters home column when pos >= 51 (one step before completing the loop)
+		// Actually: after 50 steps on the track, the token enters the home column
+		// Track has 52 cells, token starts at trackIdx=PLAYER_START.
+		// After going around, when pos == 50, token is at the last track cell before home col.
+		// pos 51 = home col step 0, pos 55 = home col step 4, pos 56 = home (win)
+		if (t.pos >= 50 && t.pos <= 55) {
+			const homeStep = t.pos - 50;
+			return HOME_COL[player][homeStep];
+		}
+		if (t.pos === 56) return HOME_CENTER;
+
+			return TRACK[trackIdx] || null;
+	}
+
+	function canMoveToken(player: Player, idx: number, dice: number): boolean {
+		const t = state.tokens[player][idx];
+
+		if (t.state === 'base') return dice === 6;
+		if (t.state === 'home') return false;
+
+		const newPos = t.pos + dice;
+		if (newPos > 56) return false; // 56 = home
+
+		// If currently on track (not in home column yet)
+		if (t.pos < 50) {
+			const newTrackIdx = (PLAYER_START[player] + newPos) % 52;
+			// Check own token collision
+			for (let i = 0; i < 4; i++) {
+				if (i === idx) continue;
+				const ot = state.tokens[player][i];
+				if (ot.state === 'track' && ot.pos < 50) {
+					const otherTrackIdx = (PLAYER_START[player] + ot.pos) % 52;
+					if (otherTrackIdx === newTrackIdx) return false;
+				}
+			}
+		} else {
+			// In home column — check collision with own tokens in home column
+			for (let i = 0; i < 4; i++) {
+				if (i === idx) continue;
+				const ot = state.tokens[player][i];
+				if (ot.state === 'track' && ot.pos >= 50) {
+					if (ot.pos === newPos) return false;
+				}
+			}
+		}
+
+		return true;
+	}
+
+	function getMovableTokens(): number[] {
+		const movable: number[] = [];
+		for (let i = 0; i < 4; i++) {
+			if (canMoveToken(state.turn, i, state.dice)) movable.push(i);
+		}
+		return movable;
+	}
+
+	function moveToken(idx: number) {
+		const t = state.tokens[state.turn][idx];
+
+		if (t.state === 'base' && state.dice === 6) {
+			t.state = 'track';
+			t.pos = 0;
+			checkCapture();
+			endTurn(true);
+			return;
+		}
+
+		const newPos = t.pos + state.dice;
+		if (newPos === 56) {
+			t.state = 'home';
+			t.pos = 56;
+			endTurn(true);
+			checkWin();
+			return;
+		}
+		t.pos = newPos;
+		checkCapture();
+		endTurn(state.dice === 6);
+	}
+
+	function checkCapture() {
+		const player = state.turn;
+		const opponent = player === 'red' ? 'yellow' : 'red';
+		const myT = state.tokens[player];
+		const opT = state.tokens[opponent];
+
+		for (let i = 0; i < 4; i++) {
+			const t = myT[i];
+			if (t.state !== 'track' || t.pos >= 50) continue; // In home col or base
+
+			const myTrackIdx = (PLAYER_START[player] + t.pos) % 52;
+
+			for (let j = 0; j < 4; j++) {
+				const ot = opT[j];
+				if (ot.state !== 'track' || ot.pos >= 50) continue;
+
+				const opTrackIdx = (PLAYER_START[opponent] + ot.pos) % 52;
+
+				// Same physical square?
+				if (myTrackIdx === opTrackIdx) {
+					// Is it safe?
+					if (!SAFE.includes(myTrackIdx)) {
+						ot.state = 'base';
+						ot.pos = 0;
+					}
+				}
+			}
+		}
+	}
+
+	function checkWin() {
+		const allHome = state.tokens[state.turn].every(t => t.state === 'home');
+		if (allHome) {
+			state.gameOver = true;
+			state.winner = state.turn;
+		}
+	}
+
+	function endTurn(extraTurn: boolean) {
+		state.rolled = false;
+		state.waitingForToken = false;
+
+		if (extraTurn) {
+			state.canRoll = true;
+		} else {
+			state.turn = state.turn === 'red' ? 'yellow' : 'red';
+			state.canRoll = true;
+		}
+		updateUI();
+	}
+
+	function rollDice() {
+		if (!state.canRoll || state.rolled || state.gameOver) return;
+		state.dice = Math.floor(Math.random() * 6) + 1;
+		state.rolled = true;
+		state.canRoll = false;
+		if (diceEl) diceEl.textContent = String(state.dice);
+
+		const movable = getMovableTokens();
+		if (movable.length === 0) {
+			endTurn(false);
+			return;
+		}
+		if (movable.length === 1) {
+			moveToken(movable[0]);
+			return;
+		}
+		state.waitingForToken = true;
+		updateUI();
+		draw();
+	}
+
+	function handleTap(e: MouseEvent | TouchEvent) {
+		if (state.gameOver) { resetGame(); return; }
+		if (!state.waitingForToken) return;
+
+		const rect = canvas.getBoundingClientRect();
+		let cx: number, cy: number;
+		if ('changedTouches' in e) {
+			cx = e.changedTouches[0].clientX;
+			cy = e.changedTouches[0].clientY;
+		} else if ('touches' in e && e.touches.length > 0) {
+			cx = e.touches[0].clientX;
+			cy = e.touches[0].clientY;
+		} else {
+			cx = (e as MouseEvent).clientX;
+			cy = (e as MouseEvent).clientY;
+		}
+
+		const x = cx - rect.left;
+		const y = cy - rect.top;
+
+		const movable = getMovableTokens();
+		for (const idx of movable) {
+			const pos = tokenScreenPos(state.turn, idx);
+			if (!pos) continue;
+			const tx = pos[1] * cellSize + cellSize / 2;
+			const ty = pos[0] * cellSize + cellSize / 2;
+			if (Math.hypot(x - tx, y - ty) < cellSize * 0.55) {
+				moveToken(idx);
+				return;
+			}
+		}
+	}
+
+	function updateUI() {
+		playerTags.forEach(tag => {
+			tag.classList.toggle('active', tag.dataset.player === state.turn);
+		});
+		if (state.gameOver) {
+			if (messageEl) messageEl.textContent = `${state.winner === 'red' ? 'Red' : 'Yellow'} wins! Tap to play again`;
+		} else if (state.waitingForToken) {
+			if (messageEl) messageEl.textContent = 'Select a token to move';
+		} else if (state.canRoll) {
+			if (messageEl) messageEl.textContent = `${state.turn === 'red' ? 'Red' : 'Yellow'}'s turn — tap dice`;
+		}
+	}
+
+	function resetGame() {
+		state.turn = 'red';
+		state.dice = 0;
+		state.rolled = false;
+		state.canRoll = true;
+		state.waitingForToken = false;
+		state.gameOver = false;
+		state.winner = null;
+		for (const p of ['red', 'yellow'] as Player[]) {
+			for (let i = 0; i < 4; i++) {
+				state.tokens[p][i] = { state: 'base', pos: 0 };
+			}
+		}
+		if (diceEl) diceEl.textContent = '?';
+		updateUI();
+		draw();
+	}
+
+	// --- Drawing ---
+	function draw() {
+		const w = canvas.getBoundingClientRect().width;
+		const h = canvas.getBoundingClientRect().height;
+		ctx.clearRect(0, 0, w, h);
+		const dk = document.documentElement.dataset.theme !== 'light';
+
+		// Draw home bases (colored corners)
+		drawHomeBase(0, 0, 6, 6, COLORS.red, dk, 'red');
+		drawHomeBase(9, 0, 6, 6, COLORS.red, dk, 'red');
+		drawHomeBase(0, 9, 6, 6, COLORS.yellow, dk, 'yellow');
+		drawHomeBase(9, 9, 6, 6, COLORS.yellow, dk, 'yellow');
+
+		// Draw track cells
+		for (let i = 0; i < TRACK.length; i++) {
+			const [r, c] = TRACK[i];
+			const x = c * cellSize;
+			const y = r * cellSize;
+
+			// Determine if this is a safe square
+			const isSafe = SAFE.includes(i);
+			ctx.fillStyle = isSafe
+				? (dk ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.07)')
+				: (dk ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)');
+			ctx.fillRect(x, y, cellSize, cellSize);
+			ctx.strokeStyle = dk ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+			ctx.lineWidth = 0.5;
+			ctx.strokeRect(x + 0.5, y + 0.5, cellSize - 1, cellSize - 1);
+
+			if (isSafe) {
+				// Draw star marker
+				drawStar(x + cellSize / 2, y + cellSize / 2, cellSize * 0.22, dk);
+			}
+		}
+
+		// Draw home columns
+		for (const p of ['red', 'yellow'] as Player[]) {
+			const cols = HOME_COL[p];
+			const color = p === 'red' ? COLORS.red : COLORS.yellow;
+			for (let i = 0; i < cols.length; i++) {
+				const [r, c] = cols[i];
+				const x = c * cellSize;
+				const y = r * cellSize;
+				const alpha = (15 + i * 10).toString(16).padStart(2, '0');
+				ctx.fillStyle = color + alpha;
+				ctx.fillRect(x, y, cellSize, cellSize);
+				ctx.strokeStyle = dk ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+				ctx.lineWidth = 0.5;
+				ctx.strokeRect(x + 0.5, y + 0.5, cellSize - 1, cellSize - 1);
+			}
+		}
+
+		// Draw center home
+		ctx.fillStyle = dk ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)';
+		ctx.beginPath();
+		ctx.roundRect(7 * cellSize + 2, 7 * cellSize + 2, cellSize - 4, cellSize - 4, 4);
+		ctx.fill();
+
+		// Draw tokens in base
+		for (const p of ['red', 'yellow'] as Player[]) {
+			const color = p === 'red' ? COLORS.red : COLORS.yellow;
+			for (let i = 0; i < 4; i++) {
+				if (state.tokens[p][i].state === 'base') {
+					const [r, c] = BASE_POS[p][i];
+					drawToken(c * cellSize + cellSize / 2, r * cellSize + cellSize / 2, color, dk);
+				}
+			}
+		}
+
+		// Draw tokens on track / home column / home
+		for (const p of ['red', 'yellow'] as Player[]) {
+			const color = p === 'red' ? COLORS.red : COLORS.yellow;
+			for (let i = 0; i < 4; i++) {
+				const t = state.tokens[p][i];
+				if (t.state === 'base') continue;
+				const pos = tokenScreenPos(p, i);
+				if (!pos) continue;
+
+				// Slight offset if multiple tokens stacked
+				let ox = 0, oy = 0;
+				if (t.state === 'home') {
+					ox = (i % 2 === 0 ? -1 : 1) * cellSize * 0.12;
+					oy = (i < 2 ? -1 : 1) * cellSize * 0.12;
+				} else {
+					// Check for stacking on track
+					let stack = 0;
+					let stackIdx = 0;
+					for (let j = 0; j <= i; j++) {
+						if (state.tokens[p][j].state === t.state && state.tokens[p][j].pos === t.pos) {
+							stack++;
+							if (j === i) stackIdx = stack - 1;
+						}
+					}
+					if (stack > 1) {
+						const angle = (stackIdx / stack) * Math.PI * 2;
+						ox = Math.cos(angle) * cellSize * 0.15;
+						oy = Math.sin(angle) * cellSize * 0.15;
+					}
+				}
+
+				drawToken(
+					pos[1] * cellSize + cellSize / 2 + ox,
+					pos[0] * cellSize + cellSize / 2 + oy,
+					color, dk
+				);
+			}
+		}
+
+		// Highlight movable tokens
+		if (state.waitingForToken) {
+			const movable = getMovableTokens();
+			for (const idx of movable) {
+				const pos = tokenScreenPos(state.turn, idx);
+				if (!pos) continue;
+				const x = pos[1] * cellSize + cellSize / 2;
+				const y = pos[0] * cellSize + cellSize / 2;
+				ctx.strokeStyle = dk ? '#ffffff' : '#000000';
+				ctx.lineWidth = 2.5;
+				ctx.beginPath();
+				ctx.arc(x, y, cellSize * 0.4, 0, Math.PI * 2);
+				ctx.stroke();
+			}
+		}
+
+		// Game over overlay
+		if (state.gameOver) {
+			ctx.fillStyle = dk ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.6)';
+			ctx.fillRect(0, 0, w, h);
+			ctx.fillStyle = dk ? '#ffffff' : '#09090b';
+			ctx.textAlign = 'center';
+			ctx.textBaseline = 'middle';
+			ctx.font = '600 24px Inter, system-ui, sans-serif';
+			ctx.fillText(`${state.winner === 'red' ? 'Red' : 'Yellow'} wins!`, w / 2, h / 2 - 12);
+			ctx.font = '500 13px Inter, system-ui, sans-serif';
+			ctx.fillStyle = dk ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.45)';
+			ctx.fillText('Tap to play again', w / 2, h / 2 + 14);
+		}
+	}
+
+	function drawHomeBase(row: number, col: number, rows: number, cols: number, color: string, dk: boolean, player: Player) {
+		const x = col * cellSize;
+		const y = row * cellSize;
+		const w = cols * cellSize;
+		const h = rows * cellSize;
+
+		ctx.fillStyle = dk ? color + '15' : color + '20';
+		ctx.beginPath();
+		ctx.roundRect(x + 3, y + 3, w - 6, h - 6, 8);
+		ctx.fill();
+
+		ctx.strokeStyle = dk ? color + '25' : color + '35';
+		ctx.lineWidth = 1;
+		ctx.beginPath();
+		ctx.roundRect(x + 3, y + 3, w - 6, h - 6, 8);
+		ctx.stroke();
+	}
+
+	function drawToken(x: number, y: number, color: string, dk: boolean) {
+		const r = cellSize * 0.3;
+		// Shadow
+		ctx.fillStyle = 'rgba(0,0,0,0.2)';
+		ctx.beginPath();
+		ctx.arc(x + 1, y + 2, r, 0, Math.PI * 2);
+		ctx.fill();
+		// Body
+		const grad = ctx.createRadialGradient(x - r * 0.3, y - r * 0.3, 0, x, y, r);
+		grad.addColorStop(0, color);
+		grad.addColorStop(1, dk ? shadeColor(color, -30) : shadeColor(color, -20));
+		ctx.fillStyle = grad;
+		ctx.beginPath();
+		ctx.arc(x, y, r, 0, Math.PI * 2);
+		ctx.fill();
+		// Highlight
+		ctx.fillStyle = 'rgba(255,255,255,0.25)';
+		ctx.beginPath();
+		ctx.arc(x - r * 0.2, y - r * 0.2, r * 0.3, 0, Math.PI * 2);
+		ctx.fill();
+		// Border
+		ctx.strokeStyle = dk ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)';
+		ctx.lineWidth = 0.8;
+		ctx.beginPath();
+		ctx.arc(x, y, r, 0, Math.PI * 2);
+		ctx.stroke();
+	}
+
+	function drawStar(x: number, y: number, size: number, dk: boolean) {
+		ctx.fillStyle = dk ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.18)';
+		ctx.beginPath();
+		for (let i = 0; i < 5; i++) {
+			const a = (i * 4 * Math.PI) / 5 - Math.PI / 2;
+			const px = x + Math.cos(a) * size;
+			const py = y + Math.sin(a) * size;
+			if (i === 0) ctx.moveTo(px, py);
+			else ctx.lineTo(px, py);
+		}
+		ctx.closePath();
+		ctx.fill();
+	}
+
+	function shadeColor(color: string, percent: number) {
+		const num = parseInt(color.replace('#', ''), 16);
+		const amt = Math.round(2.55 * percent);
+		const R = Math.max(0, Math.min(255, (num >> 16) + amt));
+		const G = Math.max(0, Math.min(255, ((num >> 8) & 0x00ff) + amt));
+		const B = Math.max(0, Math.min(255, (num & 0x0000ff) + amt));
+		return `#${(0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1)}`;
+	}
+
+	// Event listeners
+	diceArea?.addEventListener('click', rollDice);
+	diceArea?.addEventListener('touchend', (e) => { e.preventDefault(); rollDice(); });
+	canvas.addEventListener('click', handleTap);
+	canvas.addEventListener('touchend', (e) => { e.preventDefault(); handleTap(e); });
+	resetBtn?.addEventListener('click', resetGame);
+
+	resizeCanvas();
+	resetGame();
+	window.addEventListener('resize', () => { resizeCanvas(); draw(); });
+</script>
