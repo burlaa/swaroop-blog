@@ -716,3 +716,25 @@ svg {
 	border: 0;
 	white-space: nowrap;
 }
+
+.nav-actions a[aria-current='page'] {
+	color: var(--text-strong);
+	text-decoration: underline;
+	text-decoration-color: currentColor;
+}
+
+@media (max-width: 480px) {
+	.site-nav {
+		flex-wrap: wrap;
+		column-gap: 0.75rem;
+		row-gap: 0.35rem;
+	}
+
+	.nav-actions {
+		flex-wrap: wrap;
+	}
+
+	.nav-actions a {
+		white-space: nowrap;
+	}
+}

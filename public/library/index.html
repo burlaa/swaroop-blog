@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My Library</title>
+<style>
+:root{color-scheme:light;--ink:#362216;--paper:#f2e7d8}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(ellipse at 12% 0%,#fff8ed 0%,var(--paper) 62%,#e7d5c0 100%);color:var(--ink);font-family:Georgia,serif;min-height:100svh}
+.library{width:min(1160px,94vw);margin:auto;padding:clamp(28px,5vw,58px) 0 24px}
+header{text-align:center;margin-bottom:clamp(18px,3vw,32px)}
+h1{font-weight:normal;font-size:clamp(42px,7vw,83px);letter-spacing:-.055em;margin:0 0 7px;line-height:.98}
+header p{margin:0;color:#6e5440;font-size:clamp(14px,2vw,20px);font-style:italic}
+.shelf{position:relative;isolation:isolate;aspect-ratio:1536 / 1024;background:url('./shelf.webp') center/100% 100% no-repeat;border-radius:3px;box-shadow:0 24px 40px -16px #4a2c1a83,0 3px 8px #4a2c1a38;container-type:inline-size}
+.row{position:absolute;left:7%;width:65%;height:37%;display:flex;align-items:end;gap:1.05cqw;perspective:1000px}
+.top{bottom:51.7%}.bottom{bottom:7.3%}
+button{font:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.book{appearance:none;flex:0 0 var(--width);height:var(--height);padding:0;border:0;background:none;position:relative;transform-origin:50% 100%;transition:transform .32s cubic-bezier(.22,.72,.29,1),filter .32s;filter:drop-shadow(4px 4px 4px #160b05bd)}
+.book:hover,.book:focus-visible{transform:translateY(-3%) rotate(-2deg) translateZ(20px);z-index:2;filter:drop-shadow(8px 8px 5px #160b05ab)}
+.spine,.cover{display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--type);background:linear-gradient(90deg,#0004,transparent 9%,#fff3 12%,transparent 17%,transparent 88%,#0004),repeating-linear-gradient(85deg,#ffffff08 0 1px,transparent 1px 3px),repeating-linear-gradient(0deg,#00000009 0 1px,transparent 1px 3px),var(--cloth);border-radius:5% 9% 7% 5% / 2%;box-shadow:inset 0 1px 0 #fff5,inset 0 -2px 1px #0005;text-shadow:0 1px 1px #0004}
+.spine{width:100%;height:100%;padding:8% 8%;gap:5%;overflow:hidden;border-bottom:1px solid #261509}
+.spine::before,.spine::after{content:"";position:absolute;left:15%;right:15%;height:3px;border-block:1px solid currentColor;opacity:.36}
+.spine::before{top:7%}.spine::after{bottom:7%}
+.spine strong{font-size:clamp(6px,1.56cqw,19px);line-height:1.03;font-weight:700;overflow-wrap:normal}
+.spine small{font-size:clamp(5px,.86cqw,11px);line-height:1.08;opacity:.95}
+.book.long strong{font-size:clamp(5px,1.24cqw,15px)}
+.book:focus-visible,.object:focus-visible{outline:2px solid #fff4cd;outline-offset:3px}
+.object{position:absolute;border:0;background:none;padding:0;transform-origin:50% 90%}
+.bowl{left:70.8%;top:62.2%;width:23%;height:26.5%;border-radius:50%;overflow:hidden}
+.fish{position:absolute;left:0;top:0;width:37%;height:auto;filter:drop-shadow(0 2px 2px #2e190b80);pointer-events:none;will-change:transform}
+.ripple{position:absolute;left:17%;width:66%;top:18%;height:13%;border:1px solid #e8ffffbb;border-radius:50%;opacity:0}
+.bowl.wobble .ripple{animation:ripple .65s ease-out}
+.book.wobble .spine{animation:wiggle .48s ease-out;transform-origin:50% 100%}
+@keyframes wiggle{0%,100%{transform:rotate(0)}22%{transform:rotate(-4deg)}50%{transform:rotate(3deg)}76%{transform:rotate(-1deg)}}
+@keyframes ripple{15%{opacity:1;transform:scale(.65)}100%{opacity:0;transform:scale(1.2)}}
+.hint{text-align:center;color:#725641;font-size:clamp(12px,1.6vw,15px);margin:18px 0 0}
+@media(max-width:550px){.row{gap:.8cqw}.shelf{width:100%}.hint{margin-top:14px}.spine::before,.spine::after{height:2px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+body{overflow:hidden}
+.library{height:100vh;height:100dvh;width:100%;display:grid;grid-template-rows:auto minmax(0,1fr) auto;justify-items:center;padding:clamp(10px,2.8vh,30px) 0;gap:clamp(6px,1.6vh,18px)}
+header,.hint{margin:0}
+h1{font-size:clamp(30px, min(6vw,8vh), 72px)}
+.shelf-fit{width:94vw;min-height:0;display:grid;place-items:center;container-type:size}
+.shelf{width:min(1100px,100cqw,150cqh)}
+.row{gap:.32cqw;left:12%;width:54%;height:39%}
+.book{flex-basis:calc(var(--width) * .50);transition:transform .42s cubic-bezier(.28,1.35,.4,1),filter .25s}
+.spine{position:relative;flex-direction:row;justify-content:center;gap:3%;border-radius:3px 4px 3px 2px;background-blend-mode:normal;box-shadow:inset 2px 0 2px #fff2,inset -3px 0 3px #120b0860,inset 0 1px 1px #fff5}
+.spine strong,.spine small{writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap}
+.spine strong{font-size:clamp(5px,1.32cqw,15px)}
+.book.long strong{font-size:clamp(4px,.70cqw,9px)}
+.spine small{font-size:clamp(4px,.89cqw,10px)}
+.book.lifted{visibility:hidden}
+.book.lean-right{transform:translateX(13%) rotate(8deg)}
+.book.lean-left{transform:translateX(-13%) rotate(-8deg)}
+.fish{width:41%;aspect-ratio:5/3}
+.hint{padding:0 10px}
+@media(max-width:550px){.hint{font-size:12px}.spine small{display:none}}
+
+.row{left:3.4%}
+.book:first-child{transform:rotate(-6deg);margin-left:2cqw;margin-right:.25cqw}
+.book:nth-child(2){transform:rotate(-3deg);margin-right:.25cqw}
+.book:hover,.book:focus-visible{transform:translateY(-3%) rotate(-2deg)}
+.book.lean-right{transform:translateX(12%) rotate(8deg)}
+.book.lean-left{transform:translateX(-12%) rotate(-8deg)}
+.fish{width:46%;filter:drop-shadow(0 2px 2px #2e190b55)}
+
+
+@media(max-height:430px){
+  .library{padding:5px 0;gap:4px}
+  h1{font-size:25px}
+  header p,.hint{font-size:11px}
+}
+dialog{position:fixed;inset:0;margin:0;width:100%;height:100%;max-width:none;max-height:none;
+  border:0;padding:0;background:transparent;overflow:hidden;color:var(--ink)}
+dialog::backdrop{background:transparent}
+.shade{position:absolute;inset:0;background:#21150d66;opacity:0;pointer-events:none}
+dialog.ready .shade{opacity:1}
+.book-stage{position:absolute;left:50%;top:46%;width:min(56vw,270px,45dvh);
+  aspect-ratio:.68;transform:translate(-50%,-50%);perspective:1100px}
+.closed-book{width:100%;height:100%;transform-style:preserve-3d}
+.closed-book>div{position:absolute;backface-visibility:hidden}
+.front{inset:0;transform:translateZ(calc(var(--depth) / 2));padding:12%;
+  text-align:center;gap:8%;border-radius:3px 8px 8px 3px;box-shadow:inset 3px 0 3px #0003}
+.front strong{font-size:clamp(12px,4.4vw,30px);line-height:1.12;overflow-wrap:anywhere}
+.front small{font-size:clamp(9px,2vw,15px)}
+.closed-spine{left:calc(-1 * var(--depth));top:0;bottom:0;width:var(--depth);transform-origin:right center;
+  transform:translateZ(calc(var(--depth) / 2)) rotateY(-90deg);overflow:hidden}
+.closed-spine .spine{font-size:clamp(8px,1.7vw,14px);writing-mode:vertical-rl;transform:rotate(180deg)}
+.return{position:absolute;top:calc(46% + min(42vw,209px,34dvh) + 9px);left:50%;
+  transform:translateX(-50%);white-space:nowrap;padding:8px 16px;border:1px solid #ab9177;
+  border-radius:5px;background:#3d2a1d;color:#fff4e3;visibility:hidden}
+dialog.ready .return{visibility:visible}
+
+/* Keep the whole composition together on narrow portrait screens. */
+@media (max-width: 600px) and (orientation: portrait) {
+  .library {
+    grid-template-rows: auto auto auto;
+    align-content: center;
+    gap: clamp(12px, 2.3dvh, 20px);
+    padding: 12px 0;
+  }
+  .shelf-fit {
+    container-type: normal;
+    width: calc(100% - 20px);
+  }
+  .shelf {
+    width: min(100%, max(120px, calc((100dvh - 166px) * 1.18)));
+    aspect-ratio: 1.18;
+  }
+  h1 { font-size: clamp(30px, 10vw, 48px); }
+  .hint { max-width: 34ch; line-height: 1.45; }
+  .fish { height: auto; }
+}
+</style>
+</head>
+<body>
+<main class="library">
+<header><h1>My Library</h1><p id="count"></p></header>
+<div class="shelf-fit"><div class="shelf" aria-label="Walnut bookshelf">
+  <div class="row top" id="top" role="group" aria-label="Top shelf"></div>
+  <div class="row bottom" id="bottom" role="group" aria-label="Bottom shelf"></div>
+  <button type="button" class="object bowl" aria-label="Make the clownfish dart">
+    <canvas class="fish" width="400" height="240" aria-hidden="true"></canvas><span class="ripple"></span>
+  </button>
+</div>
+</div><p class="hint">Tap a book to take a closer look. Tap the bowl to startle the fish.</p>
+<dialog aria-label="Book cover">
+  <div class="shade"></div>
+  <div class="book-stage">
+    <div class="closed-book">
+      <div class="cover front"><strong></strong><small></small></div>
+      <div class="closed-spine" aria-hidden="true"><div class="spine"></div></div>
+    </div>
+  </div>
+  <button class="return" type="button">Back to shelf</button>
+</dialog>
+</main>
+<script>
+// Edit this list to update the shelf. Width and height are percentages of the row.
+const books = [
+  {title:'Anxious People', author:'Fredrik Backman', color:'#e5a549', ink:'#23180c', width:18, height:83},
+  {title:'Protocols', author:'Andrew D. Huberman', color:'#242a28', ink:'#f4edd7', width:18, height:94},
+  {title:'Steve Jobs', author:'Walter Isaacson', color:'#d5d0c7', ink:'#28221c', width:17, height:89},
+  {title:'How to Fail at Almost Everything and Still Win Big', author:'Scott Adams', color:'#e2aa2f', ink:'#29200e', width:20, height:79},
+  {title:'Build an Epic Career', author:'Ankur Warikoo', color:'#a92a36', ink:'#fff4e7', width:17, height:85},
+  {title:'The Psychology of Money', author:'Morgan Housel', color:'#d7e5ce', ink:'#203424', width:18, height:84},
+  {title:'The Hard Thing About Hard Things', author:'Ben Horowitz', color:'#25364a', ink:'#fff5de', width:19, height:91},
+  {title:'Born a Crime', author:'Trevor Noah', color:'#1e5081', ink:'#fff0a9', width:16, height:82},
+  {title:'Project Hail Mary', author:'Andy Weir', color:'#ad3829', ink:'#fff0d2', width:19, height:96},
+  {title:'Atomic Habits', author:'James Clear', color:'#ebe0cb', ink:'#5b4024', width:18, height:86}
+];
+const dialog = document.querySelector('dialog');
+const motion = matchMedia('(prefers-reduced-motion: reduce)');
+function wiggle(element) {
+  element.classList.remove('wobble');
+  void element.offsetWidth;
+  element.classList.add('wobble');
+}
+function paint(element, book) {
+  element.style.setProperty('--cloth', book.color);
+  element.style.setProperty('--type', book.ink);
+}
+document.querySelector('#count').textContent = books.length + ' books read';
+books.forEach((book, index) => {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'book' + (book.title.length > 31 ? ' long' : '');
+  button.setAttribute('aria-label', book.title + ' by ' + book.author);
+  button.style.setProperty('--width', book.width + '%');
+  button.style.setProperty('--height', book.height + '%');
+  paint(button, book);
+  const spine = document.createElement('span');
+  spine.className = 'spine';
+  const title = document.createElement('strong');
+  title.textContent = book.title;
+  const author = document.createElement('small');
+  author.textContent = book.author;
+  spine.append(title, author);
+  button.append(spine);
+  document.querySelector(index < 5 ? '#top' : '#bottom').append(button);
+  button.addEventListener('click', () => openBook(button, book));
+});
+const stage = dialog.querySelector('.book-stage');
+const volume = dialog.querySelector('.closed-book');
+const shade = dialog.querySelector('.shade');
+const backButton = dialog.querySelector('.return');
+let selected, flight, dimming, returning;
+
+function leanNeighbors(button, lean) {
+  button.previousElementSibling?.classList.toggle('lean-right', lean);
+  button.nextElementSibling?.classList.toggle('lean-left', lean);
+}
+
+function openBook(button, book) {
+  if (selected) return;
+  selected = button;
+  returning = false;
+  paint(volume, book);
+  volume.querySelector('strong').textContent = book.title;
+  volume.querySelector('small').textContent = book.author;
+  volume.querySelector('.closed-spine .spine').textContent = book.title;
+  dialog.setAttribute('aria-label', book.title + ' by ' + book.author);
+  dialog.showModal();
+
+  const slot = button.getBoundingClientRect();
+  const target = stage.getBoundingClientRect();
+  const scale = slot.height / target.height;
+  const x = slot.left + slot.width / 2 - target.left - target.width / 2;
+  const y = slot.top + slot.height / 2 - target.top - target.height / 2;
+  volume.style.setProperty('--depth', slot.width / scale + 'px');
+  button.classList.add('lifted');
+  leanNeighbors(button, true);
+  if (motion.matches) {
+    dialog.classList.add('ready');
+    backButton.focus();
+    return;
+  }
+  const timing = {duration:620, easing:'cubic-bezier(.42,0,.20,1)', fill:'both'};
+  flight = volume.animate([
+    {transform:`translate3d(${x}px,${y}px,0) scale(${scale}) rotateY(90deg)`},
+    {transform:'translate3d(0,0,0) scale(1) rotateY(0deg)'}
+  ], timing);
+  dimming = shade.animate([{opacity:0},{opacity:1}], timing);
+  flight.finished.then(() => {
+    if (returning) return;
+    dialog.classList.add('ready');
+    backButton.focus({preventScroll:true});
+  });
+}
+
+async function returnBook() {
+  if (!selected || returning) return;
+  returning = true;
+  dialog.classList.remove('ready');
+  leanNeighbors(selected, false);
+  if (flight) {
+    flight.reverse();
+    dimming.reverse();
+    await flight.finished;
+  }
+  const button = selected;
+  dialog.close();
+  flight?.cancel();
+  dimming?.cancel();
+  flight = dimming = selected = null;
+  button.classList.remove('lifted');
+  button.focus({preventScroll:true});
+}
+dialog.addEventListener('click', returnBook);
+dialog.addEventListener('cancel', event => {
+  event.preventDefault();
+  returnBook();
+});
+const bowl = document.querySelector('.bowl');
+const fish = document.querySelector('.fish');
+const context = fish.getContext('2d');
+const rings = 34, sides = 24;
+let phase = 0, previous = 0, dartUntil = 0, speed = .62, tailTime = 0;
+bowl.addEventListener('click', () => {
+  dartUntil = performance.now() + 1350;
+  wiggle(bowl);
+});
+function drawFish(yaw) {
+  const c = Math.cos(yaw), s = Math.sin(yaw);
+  const project = ([x,y,z]) => [200+ x*c+z*s,120+y, z*c-x*s];
+  const body = [];
+  for (let i=0;i<=rings;i++) {
+    const u=i/rings;
+    const radius=Math.sin(Math.PI*u)**.68;
+    const x=-104+218*u;
+    const bend=Math.sin(tailTime-u*4)*19*(1-u)**3;
+    body.push(Array.from({length:sides},(_,j)=>{
+      const t=j/sides*Math.PI*2;
+      return project([x,Math.sin(t)*radius*49,Math.cos(t)*radius*27+bend]);
+    }));
+  }
+  const faces=[];
+  function face(points,color) {
+    faces.push({points,color,z:points.reduce((total,p)=>total+p[2],0)/points.length});
+  }
+  for(let i=0;i<rings;i++){
+    const u=(i+.5)/rings;
+    for(let j=0;j<sides;j++){
+      const k=(j+1)%sides;
+      const theta=(j+.5)*Math.PI*2/sides;
+      const stripe=Math.min(Math.abs(u-.22),Math.abs(u-.49-.035*Math.sin(theta)),Math.abs(u-.75));
+      const rgb=stripe<.044?[246,243,222]:stripe<.065?[33,29,27]:[244,103,28];
+      const light=.62+.30*Math.max(0,-Math.sin(theta))+.18*Math.max(0,Math.cos(theta+yaw));
+      face([body[i][j],body[i+1][j],body[i+1][k],body[i][k]],'rgb('+rgb.map(v=>Math.min(255,Math.round(v*light))).join(',')+')');
+    }
+  }
+  const tail=19*Math.sin(tailTime);
+  face([[-94,0,tail],[-146,-33,tail*2],[-162,-20,tail*2],[-158,23,tail*2],[-144,34,tail*2]].map(project),'#322520');
+  face([[-101,0,tail],[-146,-27,tail*2],[-155,-18,tail*2],[-151,19,tail*2],[-142,27,tail*2]].map(project),'#e16e28');
+  face([[-49,-34,0],[-30,-66,0],[13,-65,0],[41,-44,0]].map(project),'#a54b24');
+  for(const side of [-1,1]){
+    face([[28,10,side*22],[-12,33,side*37],[-23,20,side*(38+4*Math.sin(tailTime))]].map(project),'#ce6b30');
+    const eye=project([78,-12,side*19]);
+    if (side*c>0) faces.push({z:eye[2]+5,eye});
+  }
+  context.clearRect(0,0,400,240);
+  faces.sort((a,b)=>a.z-b.z);
+  for(const {points,color,eye} of faces){
+    context.beginPath();
+    if(eye){
+      context.ellipse(eye[0],eye[1],Math.max(3,9*Math.abs(c)),10,0,0,Math.PI*2);
+      context.fillStyle='#251e18'; context.fill();
+      context.beginPath(); context.arc(eye[0]+1,eye[1]-3,2.4,0,Math.PI*2);
+      context.fillStyle='#fff8de'; context.fill();
+      continue;
+    }
+    points.forEach(([x,y],i)=>i ? context.lineTo(x,y) : context.moveTo(x,y));
+    context.closePath();
+    context.fillStyle=color; context.strokeStyle=color; context.lineWidth=.75;
+    context.fill(); context.stroke();
+  }
+}
+function swim(time) {
+  const dt = Math.min(.045,(time-previous)/1000);
+  previous=time;
+  const target=time<dartUntil?2.65:.62;
+  speed+=(target-speed)*Math.min(1,dt*(target>speed?8:3));
+  if(!motion.matches){phase+=dt*speed;tailTime+=dt*(9+speed*7);}
+  const yaw=phase+.17*Math.sin(tailTime*.4);
+  fish.style.left=(50+25*Math.sin(phase))+'%';
+  fish.style.top=(50+9*Math.cos(phase))+'%';
+  fish.style.transform=`translate(-50%,-50%) rotate(${-7*Math.sin(phase)}deg) scale(${1+.13*Math.cos(phase)})`;
+  drawFish(yaw);
+
+  requestAnimationFrame(swim);
+}
+requestAnimationFrame(swim);
+
+</script>
+</body>
+</html>

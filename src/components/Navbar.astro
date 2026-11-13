@@ -11,6 +11,7 @@ import { SITE_AUTHOR } from '../consts';
 			<a href="/blog/">Journal</a>
 			<a href="/bookmarks/">Bookmarks</a>
 			<a href="/games/">Games</a>
+			<a href="/bookshelf/" aria-current={Astro.url.pathname.replace(/\/$/, '') === '/bookshelf' ? 'page' : undefined}>My Library</a>
 			<button class="theme-toggle" type="button" data-theme-toggle aria-label="Switch color theme">
 				<span class="theme-toggle__icon" aria-hidden="true"></span>
 			</button>
