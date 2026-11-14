@@ -29,10 +29,10 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 			</div>
 
 			<div class="game-bottom">
-				<button type="button" class="dice-area" data-dice-area aria-label="Roll dice">
-					<span class="dice" data-dice>?</span>
-					<span class="dice-hint">Roll dice</span>
-				</button>
+				<div class="dice-area" data-dice-area>
+					<div class="dice" data-dice>?</div>
+					<p class="dice-hint">Tap to roll</p>
+				</div>
 				<div class="message" data-message>Red's turn — tap dice</div>
 			</div>
 		</section>
@@ -171,10 +171,6 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 	}
 
 	.dice-area {
-		padding: 0;
-		border: 0;
-		background: none;
-		font: inherit;
 		display: flex;
 		align-items: center;
 		gap: 0.6rem;
@@ -241,12 +237,10 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 </style>
 
 <script>
-	import { redrawOnThemeChange } from '../../scripts/game-theme';
-
 	const canvas = document.getElementById('ludo-canvas') as HTMLCanvasElement;
 	const ctx = canvas.getContext('2d')!;
 	const diceEl = document.querySelector<HTMLElement>('[data-dice]');
-	const diceArea = document.querySelector<HTMLButtonElement>('[data-dice-area]');
+	const diceArea = document.querySelector<HTMLElement>('[data-dice-area]');
 	const messageEl = document.querySelector<HTMLElement>('[data-message]');
 	const resetBtn = document.querySelector<HTMLButtonElement>('[data-reset]');
 	const playerTags = Array.from(document.querySelectorAll<HTMLElement>('[data-player]'));
@@ -288,28 +282,44 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
 	// 15x15 board. 52-cell track going clockwise.
 	// Red's tokens enter at index 0, Yellow's at index 26.
-	const quarter: [number, number][] = [
-		[6,1],[6,2],[6,3],[6,4],[6,5],
-		[5,6],[4,6],[3,6],[2,6],[1,6],[0,6],[0,7],[0,8],
-	];
+	// After 50 steps on the track, tokens enter the home column (5 cells) then home.
 	const TRACK: [number, number][] = [
-		...quarter,
-		...quarter.map(([row, col]): [number, number] => [col, 14 - row]),
-		...quarter.map(([row, col]): [number, number] => [14 - row, 14 - col]),
-		...quarter.map(([row, col]): [number, number] => [14 - col, row]),
+		[6,1],[6,2],[6,3],[6,4],[6,5],        // 0-4
+		[5,6],[4,6],[3,6],[2,6],[1,6],[0,6],  // 5-10
+		[0,7],[0,8],                           // 11-12
+		[1,8],[2,8],[3,8],[4,8],[5,8],        // 13-17
+		[6,9],[6,10],[6,11],[6,12],[6,13],    // 18-22
+		[7,13],[8,13],                         // 23-24
+		[8,12],[8,11],[8,10],[8,9],[8,8],     // 25-29
+		[9,8],[10,8],[11,8],[12,8],[13,8],    // 30-34
+		[13,7],[13,6],                         // 35-36
+		[13,5],[13,4],[13,3],[13,2],[13,1],   // 37-41
+		[12,1],[11,1],                         // 42-43
+		[11,2],[11,3],[11,4],[11,5],[11,6],   // 44-48
+		[10,6],[9,6],[8,6],                    // 49-51
 	];
-	const PLAYER_START: Record<Player, number> = { red: 0, yellow: 26 };
-	const HOME_ENTRY = 51;
-	const FINISH = 56;
-	const HOME_COL: Record<Player, [number, number][]> = {
-		red: [[7,1],[7,2],[7,3],[7,4],[7,5],[7,6]],
-		yellow: [[7,13],[7,12],[7,11],[7,10],[7,9],[7,8]],
+
+	// Player start offsets on the track
+	const PLAYER_START: Record<Player, number> = {
+		red: 0,
+		yellow: 26,
 	};
+
+	// Home column: 5 cells leading to the center home
+	// Red's home column: col 7, rows 1-6 (going down)
+	// Yellow's home column: col 7, rows 13-8 (going up)
+	const HOME_COL: Record<Player, [number, number][]> = {
+		red:    [[1,7],[2,7],[3,7],[4,7],[5,7]],
+		yellow: [[13,7],[12,7],[11,7],[10,7],[9,7]],
+	};
+
+	// Home (final destination — the center)
+	const HOME_CENTER: [number, number] = [7, 7];
 
 	// Token base positions (2x2 grid in each corner)
 	const BASE_POS: Record<Player, [number, number][]> = {
 		red:    [[2,2],[2,3],[3,2],[3,3]],
-		yellow: [[11,11],[11,12],[12,11],[12,12]],
+		yellow: [[11,12],[11,13],[12,12],[12,13]],
 	};
 
 	// Safe squares on the track (no capture)
@@ -335,23 +345,62 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 		cellSize = rect.width / 15;
 	}
 
-	function tokenScreenPos(player: Player, idx: number): [number, number] {
-		const token = state.tokens[player][idx];
-		if (token.state === 'base') return BASE_POS[player][idx];
-		if (token.pos >= HOME_ENTRY) return HOME_COL[player][token.pos - HOME_ENTRY];
-		return TRACK[(PLAYER_START[player] + token.pos) % TRACK.length];
+	function tokenScreenPos(player: Player, idx: number): [number, number] | null {
+		const t = state.tokens[player][idx];
+		if (t.state === 'base') return BASE_POS[player][idx];
+		if (t.state === 'home') return HOME_CENTER;
+
+		// On track
+		const trackIdx = (PLAYER_START[player] + t.pos) % 52;
+
+		// Check if token is in home column
+		// Token enters home column when pos >= 51 (one step before completing the loop)
+		// Actually: after 50 steps on the track, the token enters the home column
+		// Track has 52 cells, token starts at trackIdx=PLAYER_START.
+		// After going around, when pos == 50, token is at the last track cell before home col.
+		// pos 51 = home col step 0, pos 55 = home col step 4, pos 56 = home (win)
+		if (t.pos >= 50 && t.pos <= 55) {
+			const homeStep = t.pos - 50;
+			return HOME_COL[player][homeStep];
+		}
+		if (t.pos === 56) return HOME_CENTER;
+
+			return TRACK[trackIdx] || null;
 	}
 
 	function canMoveToken(player: Player, idx: number, dice: number): boolean {
-		const token = state.tokens[player][idx];
-		if (token.state === 'home' || (token.state === 'base' && dice !== 6)) return false;
+		const t = state.tokens[player][idx];
 
-		const destination = token.state === 'base' ? 0 : token.pos + dice;
-		if (destination > FINISH) return false;
-		if (destination === FINISH) return true;
-		return !state.tokens[player].some((other, index) =>
-			index !== idx && other.state === 'track' && other.pos === destination
-		);
+		if (t.state === 'base') return dice === 6;
+		if (t.state === 'home') return false;
+
+		const newPos = t.pos + dice;
+		if (newPos > 56) return false; // 56 = home
+
+		// If currently on track (not in home column yet)
+		if (t.pos < 50) {
+			const newTrackIdx = (PLAYER_START[player] + newPos) % 52;
+			// Check own token collision
+			for (let i = 0; i < 4; i++) {
+				if (i === idx) continue;
+				const ot = state.tokens[player][i];
+				if (ot.state === 'track' && ot.pos < 50) {
+					const otherTrackIdx = (PLAYER_START[player] + ot.pos) % 52;
+					if (otherTrackIdx === newTrackIdx) return false;
+				}
+			}
+		} else {
+			// In home column — check collision with own tokens in home column
+			for (let i = 0; i < 4; i++) {
+				if (i === idx) continue;
+				const ot = state.tokens[player][i];
+				if (ot.state === 'track' && ot.pos >= 50) {
+					if (ot.pos === newPos) return false;
+				}
+			}
+		}
+
+		return true;
 	}
 
 	function getMovableTokens(): number[] {
@@ -374,11 +423,11 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 		}
 
 		const newPos = t.pos + state.dice;
-		if (newPos === FINISH) {
+		if (newPos === 56) {
 			t.state = 'home';
-			t.pos = FINISH;
-			checkWin();
+			t.pos = 56;
 			endTurn(true);
+			checkWin();
 			return;
 		}
 		t.pos = newPos;
@@ -394,13 +443,13 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
 		for (let i = 0; i < 4; i++) {
 			const t = myT[i];
-			if (t.state !== 'track' || t.pos >= HOME_ENTRY) continue; // In home col or base
+			if (t.state !== 'track' || t.pos >= 50) continue; // In home col or base
 
 			const myTrackIdx = (PLAYER_START[player] + t.pos) % 52;
 
 			for (let j = 0; j < 4; j++) {
 				const ot = opT[j];
-				if (ot.state !== 'track' || ot.pos >= HOME_ENTRY) continue;
+				if (ot.state !== 'track' || ot.pos >= 50) continue;
 
 				const opTrackIdx = (PLAYER_START[opponent] + ot.pos) % 52;
 
@@ -428,10 +477,13 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 		state.rolled = false;
 		state.waitingForToken = false;
 
-		if (!extraTurn) state.turn = state.turn === 'red' ? 'yellow' : 'red';
-		state.canRoll = !state.gameOver;
+		if (extraTurn) {
+			state.canRoll = true;
+		} else {
+			state.turn = state.turn === 'red' ? 'yellow' : 'red';
+			state.canRoll = true;
+		}
 		updateUI();
-		draw();
 	}
 
 	function rollDice() {
@@ -464,6 +516,9 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 		if ('changedTouches' in e) {
 			cx = e.changedTouches[0].clientX;
 			cy = e.changedTouches[0].clientY;
+		} else if ('touches' in e && e.touches.length > 0) {
+			cx = e.touches[0].clientX;
+			cy = e.touches[0].clientY;
 		} else {
 			cx = (e as MouseEvent).clientX;
 			cy = (e as MouseEvent).clientY;
@@ -486,7 +541,6 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 	}
 
 	function updateUI() {
-		if (diceArea) diceArea.disabled = !state.canRoll;
 		playerTags.forEach(tag => {
 			tag.classList.toggle('active', tag.dataset.player === state.turn);
 		});
@@ -526,6 +580,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
 		// Draw home bases (colored corners)
 		drawHomeBase(0, 0, 6, 6, COLORS.red, dk, 'red');
+		drawHomeBase(9, 0, 6, 6, COLORS.red, dk, 'red');
+		drawHomeBase(0, 9, 6, 6, COLORS.yellow, dk, 'yellow');
 		drawHomeBase(9, 9, 6, 6, COLORS.yellow, dk, 'yellow');
 
 		// Draw track cells
@@ -725,6 +781,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
 	// Event listeners
 	diceArea?.addEventListener('click', rollDice);
+	diceArea?.addEventListener('touchend', (e) => { e.preventDefault(); rollDice(); });
 	canvas.addEventListener('click', handleTap);
 	canvas.addEventListener('touchend', (e) => { e.preventDefault(); handleTap(e); });
 	resetBtn?.addEventListener('click', resetGame);
@@ -732,5 +789,4 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 	resizeCanvas();
 	resetGame();
 	window.addEventListener('resize', () => { resizeCanvas(); draw(); });
-	redrawOnThemeChange(() => draw());
 </script>

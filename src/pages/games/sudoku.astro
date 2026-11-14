@@ -245,8 +245,6 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 </style>
 
 <script>
-	import { redrawOnThemeChange } from '../../scripts/game-theme';
-
 	const canvas = document.getElementById('sudoku-canvas') as HTMLCanvasElement;
 	const ctx = canvas.getContext('2d')!;
 	const mistakesEl = document.querySelector<HTMLElement>('[data-mistakes]');
@@ -305,31 +303,6 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 		return true;
 	}
 
-	// Stop after the second solution. Trying the most constrained cell first
-	// keeps uniqueness checks quick during generation.
-	function countSolutions(puzzle: number[][], limit = 2): number {
-		let nextCell: { row: number; col: number; choices: number[] } | undefined;
-		for (let row = 0; row < 9; row++) {
-			for (let col = 0; col < 9; col++) {
-				if (puzzle[row][col] !== 0) continue;
-				const choices = [1, 2, 3, 4, 5, 6, 7, 8, 9].filter(n => isValid(puzzle, row, col, n));
-				if (!choices.length) return 0;
-				if (!nextCell || choices.length < nextCell.choices.length) nextCell = { row, col, choices };
-			}
-		}
-		if (!nextCell) return 1;
-
-		const { row, col, choices } = nextCell;
-		let count = 0;
-		for (const n of choices) {
-			puzzle[row][col] = n;
-			count += countSolutions(puzzle, limit - count);
-			if (count >= limit) break;
-		}
-		puzzle[row][col] = 0;
-		return count;
-	}
-
 	function generatePuzzle(diff: string) {
 		// Generate full solution
 		const full = Array.from({ length: 9 }, () => Array(9).fill(0));
@@ -347,14 +320,11 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
 		for (const [r, c] of positions) {
 			if (removals <= 0) break;
-			const clue = board[r][c];
-			board[r][c] = 0;
-			if (countSolutions(board) !== 1) {
-				board[r][c] = clue;
-				continue;
+			if (board[r][c] !== 0) {
+				board[r][c] = 0;
+				given[r][c] = false;
+				removals--;
 			}
-			given[r][c] = false;
-			removals--;
 		}
 	}
 
@@ -485,7 +455,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 		const rect = canvas.getBoundingClientRect();
 		let clientX: number, clientY: number;
 
-		if ('changedTouches' in e) {
+		if (e instanceof TouchEvent) {
 			const t = e.touches[0] || e.changedTouches[0];
 			clientX = t.clientX;
 			clientY = t.clientY;
@@ -566,11 +536,10 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
 	// Keyboard
 	document.addEventListener('keydown', (e) => {
-		if (!selected || gameOver || e.metaKey || e.ctrlKey || e.altKey) return;
-		if (e.key.startsWith('Arrow') || e.key === 'Backspace' || e.key === 'Delete') e.preventDefault();
 		const n = parseInt(e.key);
 		if (n >= 1 && n <= 9) { placeNumber(n); return; }
 		if (e.key === 'Backspace' || e.key === 'Delete') { placeNumber(0); return; }
+		if (!selected) return;
 		if (e.key === 'ArrowUp' && selected.r > 0) { selected.r--; draw(); }
 		if (e.key === 'ArrowDown' && selected.r < 8) { selected.r++; draw(); }
 		if (e.key === 'ArrowLeft' && selected.c > 0) { selected.c--; draw(); }
@@ -601,5 +570,4 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 	resizeCanvas();
 	initGame();
 	window.addEventListener('resize', () => { resizeCanvas(); draw(); });
-	redrawOnThemeChange(() => draw());
 </script>

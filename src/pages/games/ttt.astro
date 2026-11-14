@@ -231,8 +231,6 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 </style>
 
 <script>
-	import { redrawOnThemeChange } from '../../scripts/game-theme';
-
 	const canvas = document.getElementById('ttt-canvas') as HTMLCanvasElement;
 	const ctx = canvas.getContext('2d')!;
 	const resetButton = document.querySelector<HTMLButtonElement>('[data-reset]');
@@ -264,11 +262,9 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 	}
 	let placeAnims: PlaceAnim[] = [];
 	let animating = false;
-	let animationFrame = 0;
 
 	const humanMark = 'X';
 	const computerMark = 'O';
-	let computerTimer: ReturnType<typeof setTimeout> | undefined;
 
 	const wins = [
 		[0, 1, 2], [3, 4, 5], [6, 7, 8],
@@ -478,14 +474,14 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 			return;
 		}
 
-		animationFrame = requestAnimationFrame(animLoop);
+		requestAnimationFrame(animLoop);
 	}
 
 	function startAnim() {
 		if (animating) return;
 		animating = true;
 		lastAnimTime = 0;
-		animationFrame = requestAnimationFrame(animLoop);
+		requestAnimationFrame(animLoop);
 	}
 
 	function play(index: number) {
@@ -505,7 +501,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 		turn = turn === 'X' ? 'O' : 'X';
 
 		if (mode === 'computer' && turn === computerMark) {
-			computerTimer = setTimeout(computerMove, 350);
+			setTimeout(computerMove, 350);
 		}
 	}
 
@@ -520,7 +516,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 	}
 
 	function computerMove() {
-		if (gameOver || mode !== 'computer' || turn !== computerMark) return;
+		if (gameOver || mode !== 'computer') return;
 
 		let move = findWinningMove(computerMark);
 		if (move < 0) move = findWinningMove(humanMark);
@@ -556,6 +552,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
 		updateScores();
 
+		// Delay overlay to let last animation finish
+		setTimeout(draw, 350);
 	}
 
 	function nextRound() {
@@ -564,25 +562,22 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 		turn = startingMark;
 		gameOver = false;
 		winLine = [];
-		cancelAnimationFrame(animationFrame);
 		placeAnims = [];
 		animating = false;
 		draw();
 
 		if (mode === 'computer' && turn === computerMark) {
-			computerTimer = setTimeout(computerMove, 400);
+			setTimeout(computerMove, 400);
 		}
 	}
 
 	function resetGame() {
-		clearTimeout(computerTimer);
 		scores = { x: 0, o: 0, draws: 0 };
 		startingMark = 'X';
 		board = Array(9).fill(null);
 		turn = startingMark;
 		gameOver = false;
 		winLine = [];
-		cancelAnimationFrame(animationFrame);
 		placeAnims = [];
 		animating = false;
 		updateScores();
@@ -599,7 +594,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 		const rect = canvas.getBoundingClientRect();
 		let clientX: number, clientY: number;
 
-		if ('changedTouches' in e) {
+		if (e instanceof TouchEvent) {
 			const t = e.changedTouches[0] || e.touches[0];
 			clientX = t.clientX;
 			clientY = t.clientY;
@@ -640,5 +635,4 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 	resizeCanvas();
 	resetGame();
 	window.addEventListener('resize', () => { resizeCanvas(); draw(); });
-	redrawOnThemeChange(() => draw());
 </script>
