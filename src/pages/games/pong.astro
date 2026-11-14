@@ -230,6 +230,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 </style>
 
 <script>
+	import { redrawOnThemeChange } from '../../scripts/game-theme';
+
 	const canvas = document.getElementById('pong-canvas') as HTMLCanvasElement;
 	const ctx = canvas.getContext('2d')!;
 
@@ -247,7 +249,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 	let animFrame = 0;
 	let scores = { p1: 0, p2: 0 };
 	let currentRally = 0;
-	let lastScorer: 1 | 2 = 1;
+	let serveTimer: ReturnType<typeof setTimeout> | undefined;
 	let gameOverText = '';
 
 	// Canvas sizing
@@ -416,7 +418,9 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
 	function onScore(scorer: 1 | 2) {
 		scores[scorer === 1 ? 'p1' : 'p2'] += 1;
-		lastScorer = scorer;
+		ballVel = { x: 0, y: 0 };
+		ball = { x: COURT_W / 2, y: COURT_H / 2 };
+		trail = [];
 		currentRally = 0;
 
 		if (scores.p1 >= WIN_SCORE || scores.p2 >= WIN_SCORE) {
@@ -428,7 +432,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 			return;
 		}
 
-		setTimeout(() => {
+		serveTimer = setTimeout(() => {
 			if (gameRunning) initBall(scorer === 1 ? -1 : 1);
 		}, 500);
 	}
@@ -569,24 +573,38 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 	}
 
 	// Loop
-	function loop() {
-		if (!gameRunning) { draw(); return; }
-		tick();
+	const STEP_MS = 1000 / 60;
+	let previousFrame: number | undefined;
+	let pendingTime = 0;
+
+	function loop(timestamp: number) {
+		pendingTime += Math.min(timestamp - (previousFrame ?? timestamp), STEP_MS * 4);
+		previousFrame = timestamp;
+		while (gameRunning && pendingTime >= STEP_MS) {
+			pollInput();
+			tick();
+			pendingTime -= STEP_MS;
+		}
 		draw();
-		animFrame = requestAnimationFrame(loop);
+		if (gameRunning) animFrame = requestAnimationFrame(loop);
 	}
 
 	function startGame() {
 		if (gameRunning) return;
+		if (gameOverText) resetGame();
 		gameRunning = true;
 		waitingToStart = false;
 		gameOverText = '';
 		initBall(Math.random() > 0.5 ? 1 : -1);
 		if (animFrame) cancelAnimationFrame(animFrame);
-		loop();
+		previousFrame = undefined;
+		pendingTime = 0;
+		animFrame = requestAnimationFrame(loop);
 	}
 
 	function resetGame() {
+		clearTimeout(serveTimer);
+		aiTimer = 0;
 		gameRunning = false;
 		waitingToStart = true;
 		gameOverText = '';
@@ -607,21 +625,20 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 	});
 	document.addEventListener('keyup', (e) => { keys[e.key] = false; });
 
-	function inputPoll() {
-		if (mode === 'computer') {
-			if (keys['ArrowUp']) p1Target -= PADDLE_SPEED;
-			else if (keys['ArrowDown']) p1Target += PADDLE_SPEED;
-		} else {
-			if (keys['ArrowUp']) p1Target -= PADDLE_SPEED;
-			else if (keys['ArrowDown']) p1Target += PADDLE_SPEED;
-			if (keys['w'] || keys['W']) p2Target -= PADDLE_SPEED;
-			else if (keys['s'] || keys['S']) p2Target += PADDLE_SPEED;
+	window.addEventListener('blur', () => {
+		for (const key of Object.keys(keys)) delete keys[key];
+	});
+
+	function pollInput() {
+		if (keys.ArrowUp) p1Target -= PADDLE_SPEED;
+		else if (keys.ArrowDown) p1Target += PADDLE_SPEED;
+		if (mode === 'players') {
+			if (keys.w || keys.W) p2Target -= PADDLE_SPEED;
+			else if (keys.s || keys.S) p2Target += PADDLE_SPEED;
 		}
 		p1Target = clamp(p1Target, paddleH / 2, COURT_H - paddleH / 2);
 		p2Target = clamp(p2Target, paddleH / 2, COURT_H - paddleH / 2);
-		requestAnimationFrame(inputPoll);
 	}
-	inputPoll();
 
 	// Touch
 	function canvasY(clientY: number) {
@@ -684,4 +701,5 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 	resetPositions();
 	draw();
 	window.addEventListener('resize', () => { resizeCanvas(); draw(); });
+	redrawOnThemeChange(() => draw());
 </script>

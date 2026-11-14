@@ -203,6 +203,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 </style>
 
 <script>
+	import { redrawOnThemeChange } from '../../scripts/game-theme';
+
 	const canvas = document.getElementById('mines-canvas') as HTMLCanvasElement;
 	const ctx = canvas.getContext('2d')!;
 	const minesEl = document.querySelector<HTMLElement>('[data-mines]');
@@ -509,7 +511,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 		const rect = canvas.getBoundingClientRect();
 		let clientX: number, clientY: number;
 
-		if (e instanceof TouchEvent) {
+		if ('changedTouches' in e) {
 			const t = e.touches[0] || e.changedTouches[0];
 			clientX = t.clientX;
 			clientY = t.clientY;
@@ -547,37 +549,40 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
 	// Long press for flag on mobile
 	let longPressTimer: ReturnType<typeof setTimeout> | null = null;
-	let touchMoved = false;
+	let touchCell: { r: number; c: number } | null = null;
+
+	function cancelPress() {
+		if (longPressTimer !== null) clearTimeout(longPressTimer);
+		longPressTimer = null;
+		touchCell = null;
+	}
 
 	canvas.addEventListener('touchstart', (e) => {
 		e.preventDefault();
+		cancelPress();
+		if (e.touches.length !== 1) return;
 		if (gameOver) { resetGame(); return; }
-		touchMoved = false;
 		const cell = getCell(e);
 		if (!cell) return;
 
+		touchCell = cell;
 		longPressTimer = setTimeout(() => {
-			if (!touchMoved) {
-				handleRightClick(cell.r, cell.c);
-				longPressTimer = null;
-			}
+			cancelPress();
+			handleRightClick(cell.r, cell.c);
 		}, 400);
 	}, { passive: false });
 
-	canvas.addEventListener('touchmove', () => {
-		touchMoved = true;
-		if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+	canvas.addEventListener('touchmove', (e) => {
+		const cell = getCell(e);
+		if (cell?.r !== touchCell?.r || cell?.c !== touchCell?.c) cancelPress();
 	});
-
+	canvas.addEventListener('touchcancel', cancelPress);
 	canvas.addEventListener('touchend', (e) => {
-		if (longPressTimer) {
-			clearTimeout(longPressTimer);
-			longPressTimer = null;
-			if (!touchMoved) {
-				const cell = getCell(e);
-				if (cell && !gameOver) handleClick(cell.r, cell.c);
-			}
+		const cell = getCell(e);
+		if (touchCell && cell?.r === touchCell.r && cell.c === touchCell.c) {
+			handleClick(cell.r, cell.c);
 		}
+		cancelPress();
 	});
 
 	resetButton?.addEventListener('click', resetGame);
@@ -595,6 +600,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 	});
 
 	function resetGame() {
+		cancelPress();
 		initBoard();
 		draw();
 	}
@@ -603,4 +609,5 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 	resizeCanvas();
 	resetGame();
 	window.addEventListener('resize', () => { resizeCanvas(); draw(); });
+	redrawOnThemeChange(() => draw());
 </script>

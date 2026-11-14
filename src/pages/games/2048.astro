@@ -166,6 +166,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 </style>
 
 <script>
+	import { redrawOnThemeChange } from '../../scripts/game-theme';
+
 	const canvas = document.getElementById('game-canvas') as HTMLCanvasElement;
 	const ctx = canvas.getContext('2d')!;
 	const scoreEl = document.querySelector<HTMLElement>('[data-score]');
@@ -202,6 +204,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 	// Animation state
 	let animStart = 0;
 	let animating = false;
+	let moveFrame = 0;
+	let spawnPending = false;
 	interface AnimTile {
 		id: number;
 		value: number;
@@ -283,6 +287,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 	}
 
 	function resetGame() {
+		cancelAnimationFrame(moveFrame);
+		spawnPending = false;
 		initGrid();
 		score = 0;
 		gameOver = false;
@@ -480,13 +486,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 		animStart = performance.now();
 		animating = true;
 
-		// Spawn new tile after a short delay
-		setTimeout(() => {
-			spawnTile(true);
-			if (!canMove()) gameOver = true;
-		}, ANIM_MS * 0.6);
-
-		requestAnimationFrame(animLoop);
+		spawnPending = true;
+		moveFrame = requestAnimationFrame(animLoop);
 	}
 
 	function canMove(): boolean {
@@ -516,12 +517,17 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
 		const elapsed = ts - animStart;
 		const t = Math.min(1, elapsed / ANIM_MS);
+		if (spawnPending && t >= 0.6) {
+			spawnTile(true);
+			gameOver = !canMove();
+			spawnPending = false;
+		}
 		const eased = easeOutCubic(t);
 
 		draw(eased);
 
 		if (t < 1) {
-			requestAnimationFrame(animLoop);
+			moveFrame = requestAnimationFrame(animLoop);
 		} else {
 			animating = false;
 			inputLocked = false;
@@ -631,7 +637,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 			ctx.textAlign = 'center';
 			ctx.textBaseline = 'middle';
 
-			if (won && !keepPlaying) {
+			if (won && !keepPlaying && !gameOver) {
 				ctx.font = '650 26px Inter, system-ui, sans-serif';
 				ctx.fillText('You win!', w / 2, h / 2 - 14);
 				ctx.font = '500 12px Inter, system-ui, sans-serif';
@@ -686,8 +692,9 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 			W: 'up', S: 'down', A: 'left', D: 'right',
 		};
 		const dir = map[e.key];
-		if (dir) {
+		if (dir && !e.metaKey && !e.ctrlKey && !e.altKey) {
 			e.preventDefault();
+			if (inputLocked) return;
 			if (gameOver) { resetGame(); return; }
 			if (won && !keepPlaying) { keepPlaying = true; draw(1); }
 			move(dir);
@@ -699,6 +706,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
 	canvas.addEventListener('touchstart', (e) => {
 		e.preventDefault();
+		touchStart = null;
+		if (inputLocked || e.touches.length !== 1) return;
 		if (gameOver) { resetGame(); return; }
 		if (won && !keepPlaying) { keepPlaying = true; draw(1); }
 		const t = e.touches[0];
@@ -723,7 +732,12 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 		}
 	}, { passive: false });
 
+	for (const event of ['touchend', 'touchcancel']) {
+		canvas.addEventListener(event, () => { touchStart = null; });
+	}
+
 	canvas.addEventListener('click', () => {
+		if (inputLocked) return;
 		if (gameOver) resetGame();
 		else if (won && !keepPlaying) { keepPlaying = true; draw(1); }
 	});
@@ -734,4 +748,5 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 	resizeCanvas();
 	resetGame();
 	window.addEventListener('resize', () => { resizeCanvas(); draw(1); });
+	redrawOnThemeChange(() => draw(1));
 </script>

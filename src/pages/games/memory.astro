@@ -203,6 +203,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 </style>
 
 <script>
+	import { redrawOnThemeChange } from '../../scripts/game-theme';
+
 	const canvas = document.getElementById('memory-canvas') as HTMLCanvasElement;
 	const ctx = canvas.getContext('2d')!;
 	const movesEl = document.querySelector<HTMLElement>('[data-moves]');
@@ -268,7 +270,13 @@ let lastFlipTime = 0;
 		};
 	}
 
+	let mismatchTimer: ReturnType<typeof setTimeout> | undefined;
+	let flipFrame = 0;
+
 	function initGame() {
+		clearTimeout(mismatchTimer);
+		cancelAnimationFrame(flipFrame);
+		flipFrame = 0;
 		const total = rows * cols;
 		const pairs = total / 2;
 		const symbols: number[] = [];
@@ -494,6 +502,7 @@ let lastFlipTime = 0;
 
 	// Flip animation loop
 	function flipLoop(ts: number) {
+		flipFrame = 0;
 		if (flipAnims.length === 0) return;
 
 		const dt = lastFlipTime ? (ts - lastFlipTime) / 1000 : 0.016;
@@ -513,8 +522,9 @@ let lastFlipTime = 0;
 		draw();
 
 		if (!done) {
-			requestAnimationFrame(flipLoop);
+			flipFrame = requestAnimationFrame(flipLoop);
 		} else {
+			if (flipAnims.some((animation) => !animation.opening)) lockInput = false;
 			flipAnims = [];
 		}
 	}
@@ -523,7 +533,7 @@ let lastFlipTime = 0;
 		const rect = canvas.getBoundingClientRect();
 		let clientX: number, clientY: number;
 
-		if (e instanceof TouchEvent) {
+		if ('changedTouches' in e) {
 			const t = e.touches[0] || e.changedTouches[0];
 			clientX = t.clientX;
 			clientY = t.clientY;
@@ -556,8 +566,10 @@ let lastFlipTime = 0;
 
 		// Start flip animation
 		flipAnims.push({ index, t: 0, opening: true });
-		lastFlipTime = 0;
-		requestAnimationFrame(flipLoop);
+		if (!flipFrame) {
+			lastFlipTime = 0;
+			flipFrame = requestAnimationFrame(flipLoop);
+		}
 
 		if (flipped.length === 2) {
 			moves++;
@@ -574,20 +586,21 @@ let lastFlipTime = 0;
 
 				if (matched.size === cards.length) {
 					gameOver = true;
-					setTimeout(draw, 400);
 				}
 			} else {
 				// No match - flip back
 				lockInput = true;
-				setTimeout(() => {
+				mismatchTimer = setTimeout(() => {
 					cards[a].flipped = false;
 					cards[b].flipped = false;
 					flipped = [];
 					flipAnims.push({ index: a, t: 1, opening: false });
 					flipAnims.push({ index: b, t: 1, opening: false });
-					lastFlipTime = 0;
-					requestAnimationFrame(flipLoop);
-					lockInput = false;
+					if (!flipFrame) {
+						lastFlipTime = 0;
+						flipFrame = requestAnimationFrame(flipLoop);
+					}
+					// Keep the cards locked until the closing animation finishes.
 				}, 800);
 			}
 		}
@@ -628,4 +641,5 @@ let lastFlipTime = 0;
 	resizeCanvas();
 	resetGame();
 	window.addEventListener('resize', () => { resizeCanvas(); draw(); });
+	redrawOnThemeChange(() => draw());
 </script>
